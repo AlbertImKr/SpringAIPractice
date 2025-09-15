@@ -20,11 +20,30 @@ class ChatModelController(private val chatModelService: ChatModelService) {
     }
 
     @PostMapping(
+        value = ["/api/chatgpt4"],
+        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
+        produces = [MediaType.TEXT_PLAIN_VALUE]
+    )
+    fun chatGPT4(@RequestParam question: String): String {
+        return chatModelService.generateTextGPT4(question)
+    }
+
+    @PostMapping(
         value = ["/api/chatstream"],
         consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     fun chatStream(@RequestParam question: String): Flux<String> {
         return chatModelService.generateStreamText(question)
+    }
+
+
+    @PostMapping(
+        value = ["/api/chatstreamgpt4"],
+        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun chatStreamGPT4(@RequestParam question: String): Flux<String> {
+        return chatModelService.generateStreamTextGPT4(question)
     }
 }
