@@ -29,6 +29,15 @@ class ChatModelController(private val chatModelService: ChatModelService) {
     }
 
     @PostMapping(
+        value = ["/api/chatanthropic"],
+        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
+        produces = [MediaType.TEXT_PLAIN_VALUE]
+    )
+    fun chatAnthropic(@RequestParam question: String): String {
+        return chatModelService.generateTextAnthropic(question)
+    }
+
+    @PostMapping(
         value = ["/api/chatstream"],
         consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
@@ -45,5 +54,14 @@ class ChatModelController(private val chatModelService: ChatModelService) {
     )
     fun chatStreamGPT4(@RequestParam question: String): Flux<String> {
         return chatModelService.generateStreamTextGPT4(question)
+    }
+
+    @PostMapping(
+        value = ["/api/chatstreamanthropic"],
+        consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun chatStreamAnthropic(@RequestParam question: String): Flux<String> {
+        return chatModelService.generateStreamTextAnthropic(question)
     }
 }
