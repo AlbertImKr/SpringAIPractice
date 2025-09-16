@@ -409,6 +409,169 @@ class AiConfig {
 
 ChatClient API를 사용하면 Fluent API를 통해 직관적이고 가독성 높은 코드를 작성할 수 있습니다.
 
+## Prompts
+
+Prompts는 AI 모델이 특정 출력을 생성하도록 안내하는 데 사용하는 입력 텍스트입니다. 그래서 효과적인 프롬프트를 작성하는 것은 원하는 결과를 얻는 데 매우 중요합니다. Spring AI는 개발자가 쉽게
+프롬프트를 생성하고 관리할 수 있도록 지원합니다.
+
+### Prompt
+
+Spring AI에서 Prompt는 아래와 같이 구성됩니다:
+
+- List<Message> messages: Message 객체의 리스트
+- ChatOptions options: 모델에 대한 추가 옵션
+
+```java
+public class Prompt implements ModelRequest<List<Message>> {
+
+    private final List<Message> messages;
+
+    private ChatOptions chatOptions;
+}
+```
+
+### Message
+
+Message는 Prompt의 구성 요소로 Content + Role을 포함합니다.
+
+```java
+public interface Content {
+    String getText();
+
+    Map<String, Object> getMetadata();
+}
+
+public interface Message extends Content {
+
+    MessageType getMessageType();
+}
+```
+
+Message는 MessageType을 통해 Role을 구분합니다:
+
+```java
+public enum MessageType {
+
+    USER("user"),
+
+    ASSISTANT("assistant"),
+
+    SYSTEM("system"),
+
+    TOOL("tool");
+
+    // ...
+}
+```
+
+### PromptTemplate
+
+Spring AI에서 구조화 된 프롬프트를 생성하기 위해 `PromptTemplate` 인터페이스를 제공합니다.
+
+```java
+public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
+
+    // ...
+}
+```
+
+`PromptTemplate`은 `TemplateRenderer`를 사용하여 템플릿을 렌더링합니다. Default로 `StTemplateRenderer`를 사용합니다.
+
+```java
+public interface TemplateRenderer extends BiFunction<String, Map<String, Object>, String> {
+
+    @Override
+    String apply(String template, Map<String, Object> variables);
+
+}
+```
+
+Custom StringTemplate Renderer 예시
+
+```Kotlin
+        val template = PromptTemplate.builder()
+    .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .template("다음 <text> 문장을 영어로 번역해줘")
+    .build()
+
+val prompt = template.render(mapOf("text" to "안녕, 어떻게 지내?"))
+
+assertThat(prompt).isEqualTo("다음 안녕, 어떻게 지내? 문장을 영어로 번역해줘")
+```
+
+PromptTemplate 구현하는 interface는 다른 역할을 합니다:
+
+- `PromptTemplateActions`: Prompt 생성에 사용되는 메서드를 제공합니다.
+
+```java
+public interface PromptTemplateActions extends PromptTemplateStringActions {
+
+    Prompt create();
+
+    Prompt create(ChatOptions modelOptions);
+
+    Prompt create(Map<String, Object> model);
+
+    Prompt create(Map<String, Object> model, ChatOptions modelOptions);
+
+}
+```
+
+- `PromptTemplateStringActions`: 최종 문자열을 렌더링하는 메서드를 제공합니다.
+
+```Java
+public interface PromptTemplateStringActions {
+
+    String render();
+
+    String render(Map<String, Object> model);
+
+}
+```
+
+- `PromptTemplateMessageActions`: Message 객체를 생성하는 메서드를 제공합니다.
+
+```java
+public interface PromptTemplateMessageActions {
+
+    Message createMessage();
+
+    Message createMessage(List<Media> mediaList);
+
+    Message createMessage(Map<String, Object> model);
+
+}
+```
+
+### Creating effective prompts
+
+명확하고 효과적인 프롬프트를 보장하기 위해 몇 가지 핵심 구성 요소를 통합하는 것이 중요합니다:
+
+- Instructions: 모델이 수행할 작업에 대한 명확한 지침
+- External Context: 필요의 따라 관련 정보나 데이터
+- User Input: 유저의 직접적인 요청
+- Output Indicator: 모델이 생성해야 하는 출력 유형을 지정하는 지시문
+
+#### Simple Techniques Keywords
+
+- Text Summarization: 텍스트 요약
+- Question Answering: 질문 답변
+- Text Classification: 텍스트 분류
+- Conversation: 대화 생성
+- Code Generation: 코드 생성
+
+#### Advanced Techniques Keywords
+
+- Zero-shot Learning: 사전 학습된 지식만을 사용하여 새로운 작업 수행
+- Few-shot Learning: 몇 가지 예시를 제공하여 모델이 새로운 작업을 수행하도록 학습
+- Chain-of-Thought Prompting: 복잡한 문제 해결을 위해 모델이 단계별로 사고하도록 유도
+- Role-playing Prompts: 모델이 특정 역할을 맡아 행동하도록 유도
+- Microsoft Guidance: Framework for Prompt Creation and Optimization
+
+### 마무리
+
+효과적인 프롬프트 작성은 원하는 결과를 얻는 데 매우 중요합니다. Spring AI의 Prompt 및 PromptTemplate 기능을 활용하여 명확하고 구조화된 프롬프트를 생성할 수 있습니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)
