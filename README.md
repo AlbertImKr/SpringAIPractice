@@ -1,5 +1,9 @@
 # Spring AI Practice
 
+- [Chat Model API](#chat-model-api)
+- [Chat Client API](#chat-client-api)
+- [Prompts](#prompts)
+
 ## Chat Model API
 
 Spring AI는 다양한 Chat Model AI와 연동하여 개발자에게 AI 기반 채팅 완성 기능을 애플리케이션에 통합할 수 있는 기능을 제공합니다. 간편하고 휴대성이 뛰어난 인터페이스로 설계되어 개발자는 최소한의
