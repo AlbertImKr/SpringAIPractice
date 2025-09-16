@@ -9,7 +9,7 @@ import reactor.core.publisher.Flux
 class ChatModelService(
     @Qualifier("openAiGPT4OMini") private val openAiGPT4OMini: ChatClient,
     @Qualifier("openAiGPT4") private val chatClientGPT4: ChatClient,
-    @Qualifier("authropicChatClient") private val anthropicChatClient: ChatClient
+    @Qualifier("authropicChatClient") private val anthropicChatClient: ChatClient,
 ) {
 
     private val NO_RESPONSE = "No response generated."
