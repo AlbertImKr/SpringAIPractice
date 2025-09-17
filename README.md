@@ -576,6 +576,120 @@ public interface PromptTemplateMessageActions {
 
 효과적인 프롬프트 작성은 원하는 결과를 얻는 데 매우 중요합니다. Spring AI의 Prompt 및 PromptTemplate 기능을 활용하여 명확하고 구조화된 프롬프트를 생성할 수 있습니다.
 
+## Structured Output Converter
+
+일반적으로 AI 모델의 결과를 JSON, XML 또는 Java 클래스와 같은 구조화된 형식으로 변환하는 것이 필요합니다. Spring AI는 이러한 변환을 쉽게 처리할 수 있는 Structured Output
+Converter 기능을 제공합니다.
+
+### Structured Output API
+
+`StructuredOutputConverter` 인터페이스는 AI 모델의 출력의 최상위의 인터페이스입니다. 그리고 Spring의 `Converter<String, T>` 인터페이스와 `FormatProvider`
+인터페이스를 확장합니다.
+
+```java
+public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
+
+}
+```
+
+다음 다이어그램은 흐름을 보여줍니다:
+
+![Structured Output Converter](assets/structuredoutputconverter.png)
+> 출처: https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html
+
+- FormatProvider: AI 모델에 특정 출력 형식을 지정하는 데 사용됩니다.
+- Converter<String, T>: AI 모델의 문자열 출력을 원하는 형식 T로 변환하는 데 사용됩니다.
+
+### Available Converters
+
+Spring AI는 다양한 구조화된 출력 형식을 지원하는 여러 기본 제공 변환기를 제공합니다:
+
+![Available Converters](assets/availableconverters.png)
+> 출처: https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html
+
+- `AbstractConversionServiceOutputConverter<T>`: 사전 정의된 `GenericConversionService`만 제공합니다.
+- `AbstractMessageOutputConverter<T>`: 사전 정의된 `MessageConverter`만 제공합니다.
+- `BeanOutputConverter<T>`: 지정한 Java 클래스으로 파생된 `DRAFT_2020_12` JSON 스키마를 생성할 수 있습니다. AI 모델에 이 스키마를 제공하여 구조화된 출력을 생성하도록 할
+  수 있습니다. 또 이 컨버터는 AI 모델의 JSON 출력을 지정한 Java 클래스로 변환할 수 있습니다.
+- `MapOutputConverter`: RFC82959 호환 JSON 응답을 생성하도록 AI 모델에 지시할 수 있습니다. 또한 AI 모델의 JSON 출력을 `Map<String, Object>`로 변환할 수
+  있습니다.
+- `ListOutputConverter`: 쉼표로 구분된 목록 출력을 생성하도록 AI 모델에 지시할 수 있습니다. 또한 AI 모델의 쉼표로 구분된 목록 출력을 `java.util.List`로 변환할 수 있습니다.
+
+### Test with Converters
+
+```kotlin
+class StructuredOutputConverterTest {
+
+    @Test
+    fun beanOutputConverterTest() {
+        val converter = BeanOutputConverter(Person::class.java)
+        val input = """
+            {
+              "name": "John Doe",
+              "age": 30
+            }
+        """.trimIndent()
+
+        val person = converter.convert(input) ?: throw IllegalArgumentException("Conversion failed")
+
+        assertThat(person.name).isEqualTo("John Doe")
+        assertThat(person.age).isEqualTo(30)
+
+        val format = converter.getFormat()
+
+        println(format)
+
+        val schemaMap = converter.jsonSchemaMap
+
+        println(schemaMap)
+    }
+
+    @Test
+    fun mapOutputConverterTest() {
+        val converter = MapOutputConverter()
+
+        val input = """
+            {
+              "name": "Jane Doe",
+              "age": 25
+            }
+        """.trimIndent()
+
+        val resultMap = converter.convert(input) ?: throw IllegalArgumentException("Conversion failed")
+
+        println(resultMap)
+        assertThat(resultMap["name"]).isEqualTo("Jane Doe")
+        assertThat(resultMap["age"]).isEqualTo(25)
+
+        val format = converter.getFormat()
+        println(format)
+    }
+
+    @Test
+    fun listOutputConverterTest() {
+        val converter = ListOutputConverter()
+
+        val input = """
+            Allice, Albert, Bob, Carol
+        """.trimIndent()
+
+        val resultList = converter.convert(input) ?: throw IllegalArgumentException("Conversion failed")
+
+        println(resultList)
+        assertThat(resultList).hasSize(4)
+
+        val format = converter.format
+        println(format)
+    }
+
+    class Person(val name: String, val age: Int)
+}
+```
+
+### 마무리
+
+Structured Output Converter 기능을 사용하면 AI 모델의 출력을 다양한 구조화된 형식으로 쉽게 변환할 수 있습니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)
