@@ -3,6 +3,8 @@
 - [Chat Model API](#chat-model-api)
 - [Chat Client API](#chat-client-api)
 - [Prompts](#prompts)
+- [Structured Output Converter](#structured-output-converter)
+- [Audio Models](#audio-models)
 
 ## Chat Model API
 
@@ -689,6 +691,126 @@ class StructuredOutputConverterTest {
 ### 마무리
 
 Structured Output Converter 기능을 사용하면 AI 모델의 출력을 다양한 구조화된 형식으로 쉽게 변환할 수 있습니다.
+
+## Audio Models
+
+Spring AI는 Transcription 및 Text-to-Speech(TTS) API를 지원합니다.
+
+### Transcription API
+
+Spring AI(1.0.2) 기준 OpenAI Audio Transcription과 Azure OpenAIAudio Transcription를 간편하게 사용할 수 있습니다. OpenAI Audio
+Transcription과 Azure OpenAIAudio Transcription은 비슷하기 때문에 OpenAI Audio Transcription 예시를 통해 설명합니다.
+
+#### Spring AI Starter OpenAI Audio Transcription
+
+OpenAI Audio Transcription 지원하는 파일 형식: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.
+
+기본 설정은 `application.properties` 또는 `application.yml`에서 수정할 수 있습니다.
+
+```properties
+# 현재 OpenAI에서 whisper-1 모델만 지원, default=whisper-1
+spring.ai.openai.audio.transcription.options.model=whisper-1
+# json, text, srt, verbose_json, or vtt, default=text
+spring.ai.openai.audio.transcription.options.responseFormat=TEXT
+# ISO 639-1 언어 코드, null이면 자동 감지, default=null
+spring.ai.openai.audio.transcription.options.language=null
+# 0.0 ~ 1.0 사이의 값, default=0.7
+spring.ai.openai.audio.transcription.options.temperature=0.7
+# word 또는 sentence, null이면 자동 설정, default=null
+spring.ai.openai.audio.transcription.options.granularity-type=null
+# OpenAI API 기본 URL, default=api.openai.com
+spring.ai.openai.audio.transcription.base-url=api.openai.com
+```
+
+개별 설정을 하려면 `OpenAiAudioTranscriptionOptions`를 사용하여 `Prompt`에 전달할 수 있습니다.
+
+```kotlin
+val audioOptions = OpenAiAudioTranscriptionOptions.builder()
+  .model("whisper-1")
+  .responseFormat(OpenAiAudioApi.TranscriptResponseFormat.VERBOSE_JSON)
+  .temperature(0.7f)
+  .language("ko")
+  .build()
+
+val transcriptionPrompt = AudioTranscriptionPrompt(audioInput, audioOptions)
+```
+
+> 참조: OpenAI Audio Transcription API
+> https://platform.openai.com/docs/api-reference/audio/createTranscription
+
+OpenAI Audio Transcription 사용 예시
+
+```kotlin
+fun transcribeAudio(audioFile: MultipartFile): String {
+  val audioInput = audioFile.resource
+
+  val transcriptionPrompt = AudioTranscriptionPrompt(audioInput)
+
+  val response = transcriptionModel.call(transcriptionPrompt)
+  return response.result.output
+}
+```
+
+### Text-to-Speech (TTS) API
+
+기본 설정은 application.properties 또는 application.yml에서 수정할 수 있습니다.
+
+```Properties
+
+spring.ai.model.audio.speech=openai
+spring.ai.openai.audio.speech.base-url=api.openai.com
+# tts-1, tts-1-hd; default=tts-1
+spring.ai.openai.audio.speech.options.model=tts-1
+# alloy, echo, fable, onyx, nova, and shimmer; default=alloy
+spring.ai.openai.audio.speech.options.voice=alloy
+# mp3, opus, aac, flac, wav, and pcm; default=mp3
+spring.ai.openai.audio.speech.options.response-format=mp3
+# 0.25 (slowest) to 4.0 (fastest); default=1.0
+spring.ai.openai.audio.speech.options.speed=1.0
+```
+
+개별 설정을 하려면 `OpenAiAudioSpeechOptions`를 사용하여 `Prompt`에 전달할 수 있습니다.
+
+```kotlin
+val speedOptions = OpenAiAudioSpeechOptions.builder()
+  .model("tts-1")
+  .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+  .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+  .speed(1.0f)
+  .build()
+
+val speechPrompt = SpeechPrompt(text, speedOptions)
+```
+
+> 참조: OpenAI Create Speech API
+> https://platform.openai.com/docs/api-reference/audio/createSpeech
+
+OpenAI Text-to-Speech 사용 예시
+
+```kotlin
+fun textToSpeech(text: String): Resource {
+  val speechPrompt = SpeechPrompt(text)
+
+  val response = speechModel.call(speechPrompt)
+  return ByteArrayResource(response.result.output)
+}
+```
+
+Streaming TTS 사용 예시
+
+```kotlin
+fun streamTextToSpeech(text: String): Flux<ByteArray> {
+  val speechPrompt = SpeechPrompt(text)
+
+  return speechModel.stream(speechPrompt)
+    .map { it.result.output }
+}
+```
+
+### 마무리
+
+Spring AI의 Audio Models 기능은 아직 그렇게 드라마 틱하지는 않는 것 같고 주로 OpenAI 만 지원해서 기능이 제한적인것 같습니다. ChatClient API와 같이 상위 Interface를
+제공하지도 않아 Spring 스럽지 않은 느낌이 듭니다. 이후 버전에서 개선되길 기대합니다.
 
 ## Reference Documentation
 
