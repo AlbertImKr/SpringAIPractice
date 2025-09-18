@@ -812,6 +812,202 @@ fun streamTextToSpeech(text: String): Flux<ByteArray> {
 Spring AI의 Audio Models 기능은 아직 그렇게 드라마 틱하지는 않는 것 같고 주로 OpenAI 만 지원해서 기능이 제한적인것 같습니다. ChatClient API와 같이 상위 Interface를
 제공하지도 않아 Spring 스럽지 않은 느낌이 듭니다. 이후 버전에서 개선되길 기대합니다.
 
+## Image Model API
+
+Spring AI는 Image Model API를 통해 다양한 AI 기반 이미지 생성 모델과 통합할 수 있는 기능을 제공합니다.
+
+### Image Model Interface
+
+Image Model Interface는 call 메서드를 통해 ImagePrompt를 입력받아 ImageResponse를 반환합니다. Model 인터페이스를 확장하여 일관된 구조를 유지합니다.
+
+```java
+
+@FunctionalInterface
+public interface ImageModel extends Model<ImagePrompt, ImageResponse> {
+
+  ImageResponse call(ImagePrompt request);
+
+}
+```
+
+### ImagePrompt
+
+ImagePrompt는 ModelRequest 인터페이스를 구현하며, 이미지 생성에 필요한 메시지와 옵션을 포함합니다.
+
+```Java
+public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
+
+  private final List<ImageMessage> messages;
+
+  private ImageOptions imageModelOptions;
+
+  @Override
+  public List<ImageMessage> getInstructions() {...}
+
+  @Override
+  public ImageOptions getOptions() {...}
+
+  // constructors and utility methods omitted
+}
+```
+
+### ImageMessage
+
+ImageMessage는 이미지 생성에 필요한 텍스트와 가중치를 포함합니다.
+
+```Java
+public class ImageMessage {
+
+  private String text;
+
+  private Float weight;
+
+  public String getText() {...}
+
+  public Float getWeight() {...}
+
+  // constructors and utility methods omitted
+}
+```
+
+### ImageOptions
+
+ImageOptions는 ModelOptions 인터페이스를 확장하며, 이미지 생성에 필요한 다양한 옵션을 제공합니다.
+
+```Java
+public interface ImageOptions extends ModelOptions {
+
+  Integer getN();
+
+  String getModel();
+
+  Integer getWidth();
+
+  Integer getHeight();
+
+  String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+
+}
+```
+
+### ImageResponse
+
+ImageResponse는 ModelResponse 인터페이스를 구현하며, 이미지 생성 결과와 메타데이터를 포함합니다.
+
+```Java
+public class ImageResponse implements ModelResponse<ImageGeneration> {
+
+  private final ImageResponseMetadata imageResponseMetadata;
+
+  private final List<ImageGeneration> imageGenerations;
+
+  @Override
+  public ImageGeneration getResult() {
+    // get the first result
+  }
+
+  @Override
+  public List<ImageGeneration> getResults() {...}
+
+  @Override
+  public ImageResponseMetadata getMetadata() {...}
+
+  // other methods omitted
+
+}
+```
+
+### ImageGeneration
+
+ImageGeneration는 ModelResult 인터페이스를 구현하며, 개별 이미지 생성 결과와 메타데이터를 포함합니다.
+
+```Java
+public class ImageGeneration implements ModelResult<Image> {
+
+  private ImageGenerationMetadata imageGenerationMetadata;
+
+  private Image image;
+
+  @Override
+  public Image getOutput() {...}
+
+  @Override
+  public ImageGenerationMetadata getMetadata() {...}
+
+  // other methods omitted
+
+}
+```
+
+### Available Image Models
+
+Spring AI（1.0.2）기준 공식적으로 지원하는 모델은 아래와 같습니다:
+
+- OpenAI Image Generation
+- Azure OpenAI Image Generation
+- QianFan Image Generation
+- Stability AI Image Generation
+- ZhiPuAI Image Generation
+
+### OpenAI Image Model Analysis Example
+
+OpenAI 이미지 분석은 OpenAI Chat Model API의 멀티모달 기능을 활용하여 이미지와 텍스트를 함께 처리할 수 있습니다. Spring AI에서는 OpenAI Chat Model 혹은
+ChatClient API를 사용하여 이미지 분석을 수행할 수 있습니다.
+
+```kotlin
+fun analyzeImage(image: MultipartFile, question: String): String {
+
+  val resource = InputStreamResource(image.inputStream)
+  val mimeType = MimeType.valueOf(image.contentType ?: MediaType.IMAGE_JPEG_VALUE)
+
+  return openAiGPT4OMini.prompt()
+    .user { userSpec ->
+      userSpec
+        .text(question)
+        .media(mimeType, resource)
+    }
+    .call()
+    .content() ?: "No response generated."
+}
+
+fun analyzeImageUrl(imageUrl: String, question: String): String {
+
+  val systemMessage = SystemMessage("한국어로 대답해줘")
+  val url = URI(imageUrl)
+
+  val userMessage = UserMessage.builder()
+    .text(question)
+    .media(Media(MimeTypeUtils.IMAGE_PNG, url))
+    .build()
+
+  val prompt = Prompt(systemMessage, userMessage)
+
+  return openAiModel.call(prompt).result.output.text ?: "No response generated."
+}
+```
+
+### OpenAI Image Generation Example
+
+```kotlin
+fun generateImage(question: String): Image {
+  val prompt = ImagePrompt(
+    question,
+    OpenAiImageOptions.builder()
+      .height(1024)
+      .width(1024)
+      .build()
+  )
+
+  val result = imageModel.call(prompt).result
+
+  return result.output
+}
+```
+
+### 마무리
+
+Spring AI에서 공식적으로 지원하는 기능은 Image Genration과 멀티모달 기능을 활용한 이미지 분석입니다. 이미지 편집, 변환 등은 아직 지원하지 않는 것 같습니다. 이후 버전에서 개선되길 기대합니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)
