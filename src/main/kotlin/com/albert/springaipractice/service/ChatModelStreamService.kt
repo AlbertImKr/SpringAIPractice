@@ -3,9 +3,10 @@ package com.albert.springaipractice.service
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
 
 @Service
-class ChatModelService(
+class ChatModelStreamService(
     @Qualifier("openAiGPT4OMini") private val openAiGPT4OMini: ChatClient,
     @Qualifier("openAiGPT4") private val chatClientGPT4: ChatClient,
     @Qualifier("authropicChatClient") private val anthropicChatClient: ChatClient,
@@ -13,24 +14,24 @@ class ChatModelService(
 
     private val NO_RESPONSE = "No response generated."
 
-    fun generateText(question: String): String {
+    fun generateStreamText(question: String): Flux<String> {
         return openAiGPT4OMini.prompt()
             .user(question)
-            .call()
-            .content() ?: NO_RESPONSE
+            .stream()
+            .content()
     }
 
-    fun generateTextGPT4(question: String): String {
+    fun generateStreamTextGPT4(question: String): Flux<String> {
         return chatClientGPT4.prompt()
             .user(question)
-            .call()
-            .content() ?: NO_RESPONSE
+            .stream()
+            .content()
     }
 
-    fun generateTextAnthropic(question: String): String {
+    fun generateStreamTextAnthropic(question: String): Flux<String> {
         return anthropicChatClient.prompt()
             .user(question)
-            .call()
-            .content() ?: NO_RESPONSE
+            .stream()
+            .content()
     }
 }
