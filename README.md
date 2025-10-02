@@ -1633,6 +1633,103 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 Embeddings Model API는 다양한 Embeddings 모델을 통합할 수 있는 유연하고 확장 가능한 인터페이스를 제공합니다. 이를 통해 개발자는 복잡한 설정 없이도 임베딩 기능을 애플리케이션에 쉽게 추가할
 수 있습니다.
 
+## Vector Databases
+
+Spring AI는 벡터 데이터베이스와의 통합을 지원하여 임베딩된 데이터를 효율적으로 저장하고 검색할 수 있는 기능을 제공합니다.
+
+> [Understanding Vector Databases](https://docs.spring.io/spring-ai/reference/api/vectordbs/understand-vectordbs.html)
+
+### API Overview
+
+- DocumentWriter: 벡터 데이터베이스에 문서를 쓰는 기능을 제공해야 하는 인터페이스입니다. `Consumer<List<Document>>`를 구현합니다.
+- VectorStore: 벡터 데이터베이스와 상호작용하는 핵심 인터페이스입니다. 벡터의 저장, 검색, 삭제 등의 기능을 제공합니다. `DocumentWriter`를 확장합니다.
+    - `add(List<Document> documents)`: Document 객체 리스트를 벡터 데이터베이스에 추가합니다.
+    - `accept(List<Document> documents)`: Document 객체 리스트를 벡터 데이터베이스에 추가하는 Consumer 메서드입니다.
+    - `delete(List<String> idList)`: 주어진 ID 리스트에 해당하는 벡터를 삭제합니다.
+    - `delete(Filter.Expression filterExpression)`: 주어진 필터 표현식에 해당하는 벡터를 삭제합니다.
+    - `delete(String filterExpression)`: 주어진 필터 표현식 문자열에 해당하는 벡터를 삭제합니다.
+    - `similaritySearch(SearchRequest searchRequest)`: 주어진 검색 요청에 따라 유사한 벡터를 검색합니다.
+    - `similaritySearch(String query)`: 주어진 쿼리 문자열에 대해 유사한 벡터를 검색합니다.
+    - `getNativeClient()`: 벡터 데이터베이스의 네이티브 클라이언트 객체를 반환합니다.
+- AbstractObservationVectorStore: 벡터 저장소의 관찰 기능을 위한 추상 클래스입니다. Spring의 관찰 기능과 통합하여 메트릭 수집 및 모니터링을 지원합니다.
+- SearchRequest: 벡터 검색 요청을 나타내는 클래스입니다. 검색 쿼리, 반환할 결과 수, 필터 조건 등을 포함합니다.
+    - query: 검색할 텍스트 쿼리입니다.
+    - topK: 반환할 유사한 벡터의 최대 개수입니다. (기본값: 4)
+    - similarityThreshold: 유사도 임계값입니다. (기본값: 0.0)
+    - filterExpression: 메타데이터 기반 필터링을 위한 표현식입니다.
+
+### Batching Strategy
+
+벡터 저장소로 대량의 문서를 임베딩해야 하는 경유가 많은 데 모든 한 번에 임베딩하는 것이 쉽지 않습니다. 임베딩 모델의 최대 토큰 제한, 텍스트의 양의 제한 등 여러 제약이 있기 때문입니다. 따라서 Spring
+AI는 BatchingStrategy 인터페이스를 제공하여 대량의 문서를 여러 배치로 나누어 처리할 수 있도록 지원합니다.
+
+```Java
+public interface BatchingStrategy {
+    List<List<Document>> batch(List<Document> documents);
+}
+```
+
+### Default Implementation
+
+Spring AI는 기본적으로 `TokenCountBatchingStrategy` 구현체를 제공합니다. 이 전략은 각 문서의 토큰 수를 추정하고 최대 입력 토큰 수를 초과하지 않고 배치로 그룹화하며, 단일 문서가
+이 제한을 초과하면 예외를 발생시킵니다.
+
+`TokenCountBatchingStrategy`의 주요 특징:
+
+- OpenAI의 최대 입력 토큰 수(8191)를 기본 상한선으로 사용
+- 잠재적 오버헤드에 대한 버퍼를 제공하기 위해 예약 비율(기본 10%)을 포함
+- 실제 최대 입력 토큰 수 계산:
+  ` actualMaxInputTokenCount = originalMaxInputTokenCount * (1 - RESERVE_PERCENTAGE)`
+
+### Working with Auto-Truncation
+
+Vertex AI 텍스트 임베딩과 같은 일부 임베딩 모델은 `auto_truncate` 기능을 지원합니다. 활성화되면 모델은 최대 크기를 초과하는 텍스트 입력을 자동으로 자르고 처리를 계속합니다.
+
+이 기능을 활용하려면 `EmbeddingOptions`에서 `auto_truncate`를 `true`로 설정하면 됩니다.
+
+이 때 `TokenCountBatchingStrategy`를 인위적으로 모델의 최대 입력 토큰 수보다 크게 설정해야 합니다.
+
+### Metadata Filters
+
+벡터 검색 시 다양한 표현식을 지원하는 메타데이터 필터링 기능을 제공합니다.
+
+#### Filter String
+
+SQL과 유사한 필터 표현식을 String으로 전달할 수 있습니다.
+
+- "country == 'Seoul' AND year > 2020"
+- "category IN ['A', 'B', 'C'] OR score >= 4.5"
+
+#### Filter Expression
+
+Fluent API를 제공하는 Filter.Expression 객체를 사용할 수도 있습니다.
+
+```Java
+Filter.Expression filter = Filter.and(
+        Filter.equals("country", "Seoul"),
+        Filter.greaterThan("year", 2020)
+);
+```
+
+다양한 표현식:
+
+- eq: ==
+- ne: !=
+- gt: >
+- gte: >=
+- lt: <
+- lte: <=
+- and: AND
+- or: OR
+- in: IN
+- nin: NOT IN
+- group: 괄호로 묶기
+- not: NOT
+
+### 마무리
+
+Spring AI의 벡터 데이터베이스 통합 기능은 백터 데이터베이스와의 상호작용을 단순화하고 대량의 문서 임베딩 및 검색 작업을 효율적으로 처리할 수 있도록 지원합니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)
