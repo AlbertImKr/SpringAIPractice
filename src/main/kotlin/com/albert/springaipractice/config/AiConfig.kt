@@ -5,6 +5,7 @@ import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor
+import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor
 import org.springframework.ai.chat.memory.ChatMemory
 import org.springframework.ai.openai.OpenAiChatModel
 import org.springframework.ai.openai.OpenAiChatOptions
@@ -31,6 +32,7 @@ class AiConfig {
             .defaultAdvisors(
                 MessageChatMemoryAdvisor.builder(chatMemory).build(),
                 QuestionAnswerAdvisor.builder(vectorStore).build(),
+                VectorStoreChatMemoryAdvisor.builder(vectorStore).build(),
                 SimpleLoggerAdvisor(),
             )
             .build()
