@@ -1474,6 +1474,165 @@ Spring AI는 몇 가지 기본 Advisors를 제공합니다:
 Advisors API는 Prompt 요청과 응답을 가로채고 수정할 수 있는 유연한 메커니즘을 제공합니다. 이를 통해 로깅, 메모리 관리, RAG, 포맷 지시사항 추가, 민감한 단어 필터링 등 다양한 기능을 구현할
 수 있습니다.
 
+## Embeddings Model API
+
+Spring AI는 Embeddings Model API를 통해 다양한 AI 기반 임베딩 모델과 통합할 수 있는 기능을 제공합니다.
+
+### Embeddings
+
+Emebeddings은 텍스트, 이미지, 오디오 등 다양한 데이터 유형을 부동 소수점 숫자 배열로 표현하는 기술입니다. 이러한 표현은 기계 학습 모델이 데이터를 이해하고 처리하는 데 도움이 되며 Vector라고
+불립니다. Embeddings은 검색, 추천 시스템, 분류, 군집화 등 다양한 AI 및 NLP 작업에 활용됩니다.
+
+### Design of the Embeddings Model API
+
+- Portability: Spring의 모듈화 및 상호 교환성 원칙을 준수하여 다양한 Embeddings 모델을 쉽게 통합할 수 있도록 설계되었습니다.
+- Simplicity: 사용하기 쉽고 직관적인 API를 제공하여 개발자가 복잡한 설정 없이 Embeddings 모델을 활용할 수 있도록 합니다.
+
+### Api Overview
+
+![embedding-models-api-overview.png](assets/embedding-models-api-overview.png)
+> 출처: https://docs.spring.io/spring-ai/reference/api/embeddings.html#_api_overview
+
+### Embeddings Model Interface
+
+```Java
+/**
+ * 텍스트를 벡터로 변환하는 임베딩 모델 인터페이스
+ * 텍스트의 의미를 다차원 벡터 공간에 표현하여 유사도 검색 및 의미 분석을 가능하게 함
+ */
+public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingResponse> {
+
+    /**
+     * 임베딩 요청을 처리하는 핵심 메서드
+     * @param request 임베딩 요청 객체 (텍스트 목록과 옵션 포함)
+     * @return 임베딩 응답 객체 (벡터 결과 포함)
+     */
+    @Override
+    EmbeddingResponse call(EmbeddingRequest request);
+
+    /**
+     * 단일 텍스트를 벡터로 변환하는 편의 메서드
+     * @param text 임베딩할 텍스트
+     * @return 임베딩된 벡터 (float 배열)
+     */
+    default float[] embed(String text) {
+        // 입력 유효성 검증
+        Assert.notNull(text, "Text must not be null");
+
+        // 내부적으로 리스트 변환 후 배치 임베딩 호출
+        List<float[]> response = this.embed(List.of(text));
+
+        // 첫 번째(유일한) 결과 반환
+        return response.iterator().next();
+    }
+
+    /**
+     * Document 객체의 내용을 벡터로 변환
+     * Document는 텍스트 외에 메타데이터도 포함할 수 있음
+     * @param document 임베딩할 문서 객체
+     * @return 임베딩된 벡터
+     */
+    float[] embed(Document document);
+
+    /**
+     * 여러 텍스트를 한 번에 벡터로 변환하는 배치 처리 메서드
+     * 단일 호출보다 효율적 (API 호출 횟수 감소)
+     * @param texts 임베딩할 텍스트 리스트
+     * @return 임베딩된 벡터들의 리스트 (입력 순서 유지)
+     */
+    default List<float[]> embed(List<String> texts) {
+        // 입력 유효성 검증
+        Assert.notNull(texts, "Texts must not be null");
+
+        // 기본 옵션으로 임베딩 요청 생성 및 호출
+        return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()))
+                .getResults()                        // 모든 임베딩 결과 가져오기
+                .stream()                            // 스트림으로 변환
+                .map(Embedding::getOutput)           // 각 결과에서 벡터 추출
+                .toList();                           // List로 수집
+    }
+
+    /**
+     * Document 배치를 지정된 전략에 따라 임베딩
+     * 대량의 문서를 효율적으로 처리하기 위해 배치 전략 사용
+     * @param documents 임베딩할 문서 리스트
+     * @param options 임베딩 옵션 (모델별 설정)
+     * @param batchingStrategy 배치 처리 전략 (배치 크기, 병렬 처리 등)
+     * @return 임베딩된 벡터들의 리스트 (입력 문서 순서와 동일)
+     */
+    default List<float[]> embed(List<Document> documents, EmbeddingOptions options, BatchingStrategy batchingStrategy) {
+        // 입력 유효성 검증
+        Assert.notNull(documents, "Documents must not be null");
+
+        // 결과를 담을 리스트 초기화 (원본 크기만큼 미리 할당)
+        List<float[]> embeddings = new ArrayList<>(documents.size());
+
+        // 1. 배치 전략에 따라 문서들을 여러 그룹으로 분할
+        // 예: 100개 문서 → 10개씩 10개 배치로 분할
+        List<List<Document>> batch = batchingStrategy.batch(documents);
+
+        // 2. 각 배치를 순차적으로 처리
+        for (List<Document> subBatch : batch) {
+            // 배치 내 문서들의 텍스트만 추출
+            List<String> texts = subBatch.stream().map(Document::getText).toList();
+
+            // 임베딩 요청 생성 및 호출
+            EmbeddingRequest request = new EmbeddingRequest(texts, options);
+            EmbeddingResponse response = this.call(request);
+
+            // 3. 배치 결과를 전체 결과 리스트에 추가
+            for (int i = 0; i < subBatch.size(); i++) {
+                embeddings.add(response.getResults().get(i).getOutput());
+            }
+        }
+
+        // 4. 결과 개수 검증 (입력 문서 수와 출력 벡터 수 일치 확인)
+        Assert.isTrue(embeddings.size() == documents.size(),
+                "Embeddings must have the same number as that of the documents");
+
+        return embeddings;
+    }
+
+    /**
+     * 배치 임베딩 수행 후 전체 응답 객체 반환
+     * embed() 메서드와 달리 메타데이터 등 추가 정보도 포함
+     * @param texts 임베딩할 텍스트 리스트
+     * @return 전체 임베딩 응답 객체 (벡터 + 메타데이터)
+     */
+    default EmbeddingResponse embedForResponse(List<String> texts) {
+        // 입력 유효성 검증
+        Assert.notNull(texts, "Texts must not be null");
+
+        // 기본 옵션으로 임베딩 요청 생성 및 호출
+        // 벡터뿐만 아니라 토큰 사용량, 모델 정보 등도 포함
+        return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()));
+    }
+
+    /**
+     * 임베딩 벡터의 차원 수 반환
+     * 벡터 저장소 설정이나 유사도 계산에 필요
+     *
+     * 기본 구현: 테스트 문자열을 임베딩하여 차원 수 확인
+     * 성능 최적화를 위해 하위 클래스에서 오버라이드 권장 (원격 호출 방지)
+     * @return 임베딩 벡터의 차원 수 (예: OpenAI text-embedding-ada-002는 1536차원)
+     */
+    default int dimensions() {
+        // 샘플 텍스트를 임베딩하여 벡터 길이 확인
+        // 주의: 매번 API 호출이 발생하므로 비효율적
+        return embed("Test String").length;
+    }
+
+}
+```
+
+보시다시피 핵심은 `call(EmbeddingRequest request)` 메서드입니다. 이 메서드는 EmbeddingRequest 객체를 받아 EmbeddingResponse 객체를 반환합니다. 각 구현체에서
+이 메서드를 오버라이드하여 특정 Embeddings 모델과의 통신을 처리합니다.
+
+### 마무리
+
+Embeddings Model API는 다양한 Embeddings 모델을 통합할 수 있는 유연하고 확장 가능한 인터페이스를 제공합니다. 이를 통해 개발자는 복잡한 설정 없이도 임베딩 기능을 애플리케이션에 쉽게 추가할
+수 있습니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)
