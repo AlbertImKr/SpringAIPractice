@@ -726,11 +726,11 @@ spring.ai.openai.audio.transcription.base-url=api.openai.com
 
 ```kotlin
 val audioOptions = OpenAiAudioTranscriptionOptions.builder()
-  .model("whisper-1")
-  .responseFormat(OpenAiAudioApi.TranscriptResponseFormat.VERBOSE_JSON)
-  .temperature(0.7f)
-  .language("ko")
-  .build()
+    .model("whisper-1")
+    .responseFormat(OpenAiAudioApi.TranscriptResponseFormat.VERBOSE_JSON)
+    .temperature(0.7f)
+    .language("ko")
+    .build()
 
 val transcriptionPrompt = AudioTranscriptionPrompt(audioInput, audioOptions)
 ```
@@ -742,12 +742,12 @@ OpenAI Audio Transcription 사용 예시
 
 ```kotlin
 fun transcribeAudio(audioFile: MultipartFile): String {
-  val audioInput = audioFile.resource
+    val audioInput = audioFile.resource
 
-  val transcriptionPrompt = AudioTranscriptionPrompt(audioInput)
+    val transcriptionPrompt = AudioTranscriptionPrompt(audioInput)
 
-  val response = transcriptionModel.call(transcriptionPrompt)
-  return response.result.output
+    val response = transcriptionModel.call(transcriptionPrompt)
+    return response.result.output
 }
 ```
 
@@ -773,11 +773,11 @@ spring.ai.openai.audio.speech.options.speed=1.0
 
 ```kotlin
 val speedOptions = OpenAiAudioSpeechOptions.builder()
-  .model("tts-1")
-  .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
-  .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-  .speed(1.0f)
-  .build()
+    .model("tts-1")
+    .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+    .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .speed(1.0f)
+    .build()
 
 val speechPrompt = SpeechPrompt(text, speedOptions)
 ```
@@ -789,10 +789,10 @@ OpenAI Text-to-Speech 사용 예시
 
 ```kotlin
 fun textToSpeech(text: String): Resource {
-  val speechPrompt = SpeechPrompt(text)
+    val speechPrompt = SpeechPrompt(text)
 
-  val response = speechModel.call(speechPrompt)
-  return ByteArrayResource(response.result.output)
+    val response = speechModel.call(speechPrompt)
+    return ByteArrayResource(response.result.output)
 }
 ```
 
@@ -800,10 +800,10 @@ Streaming TTS 사용 예시
 
 ```kotlin
 fun streamTextToSpeech(text: String): Flux<ByteArray> {
-  val speechPrompt = SpeechPrompt(text)
+    val speechPrompt = SpeechPrompt(text)
 
-  return speechModel.stream(speechPrompt)
-    .map { it.result.output }
+    return speechModel.stream(speechPrompt)
+        .map { it.result.output }
 }
 ```
 
@@ -825,7 +825,7 @@ Image Model Interface는 call 메서드를 통해 ImagePrompt를 입력받아 Im
 @FunctionalInterface
 public interface ImageModel extends Model<ImagePrompt, ImageResponse> {
 
-  ImageResponse call(ImagePrompt request);
+    ImageResponse call(ImagePrompt request);
 
 }
 ```
@@ -837,17 +837,17 @@ ImagePrompt는 ModelRequest 인터페이스를 구현하며, 이미지 생성에
 ```Java
 public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 
-  private final List<ImageMessage> messages;
+    private final List<ImageMessage> messages;
 
-  private ImageOptions imageModelOptions;
+    private ImageOptions imageModelOptions;
 
-  @Override
-  public List<ImageMessage> getInstructions() {...}
+    @Override
+    public List<ImageMessage> getInstructions() {...}
 
-  @Override
-  public ImageOptions getOptions() {...}
+    @Override
+    public ImageOptions getOptions() {...}
 
-  // constructors and utility methods omitted
+    // constructors and utility methods omitted
 }
 ```
 
@@ -858,15 +858,15 @@ ImageMessage는 이미지 생성에 필요한 텍스트와 가중치를 포함�
 ```Java
 public class ImageMessage {
 
-  private String text;
+    private String text;
 
-  private Float weight;
+    private Float weight;
 
-  public String getText() {...}
+    public String getText() {...}
 
-  public Float getWeight() {...}
+    public Float getWeight() {...}
 
-  // constructors and utility methods omitted
+    // constructors and utility methods omitted
 }
 ```
 
@@ -877,15 +877,15 @@ ImageOptions는 ModelOptions 인터페이스를 확장하며, 이미지 생성�
 ```Java
 public interface ImageOptions extends ModelOptions {
 
-  Integer getN();
+    Integer getN();
 
-  String getModel();
+    String getModel();
 
-  Integer getWidth();
+    Integer getWidth();
 
-  Integer getHeight();
+    Integer getHeight();
 
-  String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+    String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
 
 }
 ```
@@ -897,22 +897,22 @@ ImageResponse는 ModelResponse 인터페이스를 구현하며, 이미지 생성
 ```Java
 public class ImageResponse implements ModelResponse<ImageGeneration> {
 
-  private final ImageResponseMetadata imageResponseMetadata;
+    private final ImageResponseMetadata imageResponseMetadata;
 
-  private final List<ImageGeneration> imageGenerations;
+    private final List<ImageGeneration> imageGenerations;
 
-  @Override
-  public ImageGeneration getResult() {
-    // get the first result
-  }
+    @Override
+    public ImageGeneration getResult() {
+        // get the first result
+    }
 
-  @Override
-  public List<ImageGeneration> getResults() {...}
+    @Override
+    public List<ImageGeneration> getResults() {...}
 
-  @Override
-  public ImageResponseMetadata getMetadata() {...}
+    @Override
+    public ImageResponseMetadata getMetadata() {...}
 
-  // other methods omitted
+    // other methods omitted
 
 }
 ```
@@ -924,17 +924,17 @@ ImageGeneration는 ModelResult 인터페이스를 구현하며, 개별 이미지
 ```Java
 public class ImageGeneration implements ModelResult<Image> {
 
-  private ImageGenerationMetadata imageGenerationMetadata;
+    private ImageGenerationMetadata imageGenerationMetadata;
 
-  private Image image;
+    private Image image;
 
-  @Override
-  public Image getOutput() {...}
+    @Override
+    public Image getOutput() {...}
 
-  @Override
-  public ImageGenerationMetadata getMetadata() {...}
+    @Override
+    public ImageGenerationMetadata getMetadata() {...}
 
-  // other methods omitted
+    // other methods omitted
 
 }
 ```
@@ -957,32 +957,32 @@ ChatClient API를 사용하여 이미지 분석을 수행할 수 있습니다.
 ```kotlin
 fun analyzeImage(image: MultipartFile, question: String): String {
 
-  val resource = InputStreamResource(image.inputStream)
-  val mimeType = MimeType.valueOf(image.contentType ?: MediaType.IMAGE_JPEG_VALUE)
+    val resource = InputStreamResource(image.inputStream)
+    val mimeType = MimeType.valueOf(image.contentType ?: MediaType.IMAGE_JPEG_VALUE)
 
-  return openAiGPT4OMini.prompt()
-    .user { userSpec ->
-      userSpec
-        .text(question)
-        .media(mimeType, resource)
-    }
-    .call()
-    .content() ?: "No response generated."
+    return openAiGPT4OMini.prompt()
+        .user { userSpec ->
+            userSpec
+                .text(question)
+                .media(mimeType, resource)
+        }
+        .call()
+        .content() ?: "No response generated."
 }
 
 fun analyzeImageUrl(imageUrl: String, question: String): String {
 
-  val systemMessage = SystemMessage("한국어로 대답해줘")
-  val url = URI(imageUrl)
+    val systemMessage = SystemMessage("한국어로 대답해줘")
+    val url = URI(imageUrl)
 
-  val userMessage = UserMessage.builder()
-    .text(question)
-    .media(Media(MimeTypeUtils.IMAGE_PNG, url))
-    .build()
+    val userMessage = UserMessage.builder()
+        .text(question)
+        .media(Media(MimeTypeUtils.IMAGE_PNG, url))
+        .build()
 
-  val prompt = Prompt(systemMessage, userMessage)
+    val prompt = Prompt(systemMessage, userMessage)
 
-  return openAiModel.call(prompt).result.output.text ?: "No response generated."
+    return openAiModel.call(prompt).result.output.text ?: "No response generated."
 }
 ```
 
@@ -990,23 +990,489 @@ fun analyzeImageUrl(imageUrl: String, question: String): String {
 
 ```kotlin
 fun generateImage(question: String): Image {
-  val prompt = ImagePrompt(
-    question,
-    OpenAiImageOptions.builder()
-      .height(1024)
-      .width(1024)
-      .build()
-  )
+    val prompt = ImagePrompt(
+        question,
+        OpenAiImageOptions.builder()
+            .height(1024)
+            .width(1024)
+            .build()
+    )
 
-  val result = imageModel.call(prompt).result
+    val result = imageModel.call(prompt).result
 
-  return result.output
+    return result.output
 }
 ```
 
 ### 마무리
 
 Spring AI에서 공식적으로 지원하는 기능은 Image Genration과 멀티모달 기능을 활용한 이미지 분석입니다. 이미지 편집, 변환 등은 아직 지원하지 않는 것 같습니다. 이후 버전에서 개선되길 기대합니다.
+
+## Adivisors API
+
+Spring AI Advisors API는 Spring AI에서 가로채고 수정하고 확장할 수 있는 강력한 메커니즘을 제공합니다.
+
+### Core Components
+
+![advisors-core-components.png](assets/advisors-core-components.png)
+> 출처: https://docs.spring.io/spring-ai/reference/api/advisors.html#_core_components
+
+- advisorCall(), advisorStream(): Advisor의 핵심 메서드로 플롬프트를 보내기전에 검사, 정의, 확장하고 응답을 받은 후 응답 검사, 처리 오류 처리 등을 수행합니다.
+- getOrder(): Advisor의 실행 순서를 정의합니다. 낮은 값이 먼저 실행됩니다.
+- getName(): Advisor의 이름을 반환합니다.
+
+### Advisors Flow
+
+![advisors-flow.png](assets/advisors-flow.png)
+> 출처: https://docs.spring.io/spring-ai/reference/api/advisors.html#_core_components
+
+### Default Advisors
+
+Spring AI는 몇 가지 기본 Advisors를 제공합니다:
+
+- SimpleLoggerAdvisor: 요청 및 응답을 로깅합니다.
+
+    ```Java
+    
+    @Override
+    public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+        // 1. 요청 로깅
+        // AI 모델 호출 전, 사용자 요청 내용을 로그에 기록
+        // (디버깅, 모니터링, 감사 목적)
+        logRequest(chatClientRequest);
+    
+        // 2. 다음 Advisor 또는 실제 AI 모델 호출
+        // Chain of Responsibility 패턴: 다음 체인으로 요청 전달
+        // 여러 Advisor가 있다면 순차적으로 실행되고, 마지막에는 실제 AI 모델이 호출됨
+        ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
+    
+        // 3. 응답 로깅
+        // AI 모델 호출 후, 생성된 응답 내용을 로그에 기록
+        // (성능 측정, 응답 품질 분석, 문제 추적 목적)
+        logResponse(chatClientResponse);
+    
+        // 4. 응답 반환
+        // 로깅 완료 후 원본 응답을 그대로 반환 (응답 수정 없음)
+        return chatClientResponse;
+    }
+    ```
+
+- VectorStoreChatMemoryAdvisor: 벡터 DB에 대화를 저장하고 의미 유사도 검색으로 관련 과거 대화만 선택적으로 가져와 프롬프트에 추가합니다.
+    - before(): 프롬프트를 보내기 전에 벡터 저장소에서 관련 문서를 검색하고 시스템 메시지에 추가합니다.
+    - after(): 모델의 응답을 받은 후, 새로운 사용자 메시지를 벡터 저장소에 저장합니다.
+
+        ```Java
+        @Override
+        public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
+            // 1. 대화 컨텍스트 정보 추출
+            // 현재 대화 세션의 고유 ID 획득 (없으면 기본값 사용)
+            String conversationId = getConversationId(request.context(), this.defaultConversationId);
+        
+            // 사용자 메시지 텍스트 추출 (null인 경우 빈 문자열 사용)
+            String query = request.prompt().getUserMessage() != null ?
+                    request.prompt().getUserMessage().getText() : "";
+        
+            // 검색할 메모리 개수(topK) 결정 (컨텍스트에서 가져오거나 기본값 사용)
+            int topK = getChatMemoryTopK(request.context());
+        
+            // 2. 벡터 저장소에서 관련 대화 검색
+            // 같은 대화 세션의 메모리만 검색하도록 필터 설정
+            String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
+        
+            // 검색 요청 객체 생성: 사용자 질문과 의미적으로 유사한 과거 대화 검색
+            var searchRequest = org.springframework.ai.vectorstore.SearchRequest.builder()
+                    .query(query)              // 검색 쿼리 (현재 사용자 메시지)
+                    .topK(topK)                // 상위 K개 결과만 반환
+                    .filterExpression(filter)  // 대화 ID 필터 적용
+                    .build();
+        
+            // 벡터 유사도 검색 실행 - 관련성 높은 과거 대화 가져오기
+            java.util.List<org.springframework.ai.document.Document> documents = this.vectorStore
+                    .similaritySearch(searchRequest);
+        
+            // 3. Long-term Memory 문자열 생성
+            // 검색된 과거 대화들을 하나의 문자열로 결합 (각 대화는 줄바꿈으로 구분)
+            String longTermMemory = documents == null ? ""
+                    : documents.stream()
+                    .map(org.springframework.ai.document.Document::getText)  // 각 문서의 텍스트 추출
+                    .collect(java.util.stream.Collectors.joining(System.lineSeparator()));  // 줄바꿈으로 연결
+        
+            // 4. 시스템 프롬프트에 메모리 추가 (RAG 패턴의 "증강" 단계)
+            // 기존 시스템 메시지 가져오기
+            org.springframework.ai.chat.messages.SystemMessage systemMessage = request.prompt().getSystemMessage();
+        
+            // 템플릿을 사용해 시스템 메시지와 long-term memory를 결합
+            // 예: "지시사항: {instructions}\n과거 대화: {long_term_memory}"
+            String augmentedSystemText = this.systemPromptTemplate
+                    .render(java.util.Map.of("instructions", systemMessage.getText(),
+                            "long_term_memory", longTermMemory));
+        
+            // 5. 증강된 시스템 메시지로 새로운 요청 객체 생성
+            // mutate()를 사용해 기존 요청을 복사하고 프롬프트만 수정
+            ChatClientRequest processedChatClientRequest = request.mutate()
+                    .prompt(request.prompt().augmentSystemMessage(augmentedSystemText))
+                    .build();
+        
+            // 6. 현재 사용자 메시지를 벡터 저장소에 저장 (향후 검색을 위해)
+            org.springframework.ai.chat.messages.UserMessage userMessage = processedChatClientRequest.prompt()
+                    .getUserMessage();
+        
+            if (userMessage != null) {
+                // 사용자 메시지를 Document로 변환하여 벡터 DB에 저장
+                // 나중에 이 대화를 검색할 수 있도록 인덱싱
+                this.vectorStore.write(toDocuments(java.util.List.of(userMessage), conversationId));
+            }
+        
+            // 7. 메모리가 증강된 요청 객체 반환
+            // 이제 AI는 과거 대화 컨텍스트를 포함한 프롬프트로 응답을 생성함
+            return processedChatClientRequest;
+        }
+
+        @Override
+        public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+            // 1. AI 어시스턴트 응답 메시지 추출
+            // 빈 리스트로 초기화 (응답이 없는 경우 대비)
+            List<Message> assistantMessages = new ArrayList<>();
+        
+            // chatResponse가 null이 아닌 경우에만 처리 (null 안전성 체크)
+            if (chatClientResponse.chatResponse() != null) {
+                // 2. 응답 결과에서 모든 어시스턴트 메시지 추출
+                assistantMessages = chatClientResponse.chatResponse()
+                        .getResults()                           // 모든 생성 결과 가져오기 (스트리밍의 경우 여러 개일 수 있음)
+                        .stream()                               // 스트림으로 변환
+                        .map(g -> (Message) g.getOutput())      // 각 결과에서 실제 메시지 객체 추출
+                        .toList();                              // List로 수집
+            }
+        
+            // 3. AI 응답을 벡터 저장소에 저장 (Long-term Memory 구축)
+            // 현재 대화의 conversationId와 함께 저장하여 나중에 검색 가능하도록 함
+            this.vectorStore.write(
+                    toDocuments(assistantMessages,  // 메시지들을 Document 형식으로 변환
+                            this.getConversationId(chatClientResponse.context(), this.defaultConversationId))  // 대화 ID 추출
+            );
+        
+            // 4. 원본 응답 객체를 그대로 반환
+            // after() 메서드는 응답을 수정하지 않고, 저장만 수행함
+            return chatClientResponse;
+        }
+        ```
+
+- PromptChatMemoryAdvisor: 이는 VectorStoreChatMemoryAdvisor와 유사하지만, 벡터 저장소 대신 메모리 내에서 대화 기록을 관리합니다.
+    - before(): 프롬프트를 보내기 전에 메모리에서 관련 대화를 검색하고 시스템 메시지에 추가합니다.
+    - after(): 모델의 응답을 받은 후, 새로운 사용자 메시지를 메모리에 저장합니다.
+
+        ```java
+        @Override
+        public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+            // 현재 대화 세션의 고유 ID 획득 (없으면 기본값 사용)
+            String conversationId = getConversationId(chatClientRequest.context(), this.defaultConversationId);
+                  
+            // 1. 현재 대화의 메모리(대화 히스토리) 조회
+            // ChatMemory에서 이 대화 세션의 모든 과거 메시지 가져오기
+            List<Message> memoryMessages = this.chatMemory.get(conversationId);
+                  
+            // 디버그 로그: 메모리 처리 전 상태 기록
+            logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
+                  conversationId, memoryMessages);
+              
+            // 2. 메모리 메시지를 문자열 형식으로 변환
+            // USER와 ASSISTANT 메시지만 필터링하여 "역할:내용" 형식으로 변환
+            String memory = memoryMessages.stream()
+               .filter(m -> m.getMessageType() == MessageType.USER || 
+                            m.getMessageType() == MessageType.ASSISTANT)  // 시스템 메시지 등 제외
+               .map(m -> m.getMessageType() + ":" + m.getText())          // "USER:안녕하세요" 형식으로 변환
+               .collect(Collectors.joining(System.lineSeparator()));      // 각 메시지를 줄바꿈으로 구분
+              
+            // 3. 시스템 메시지에 대화 메모리 추가 (컨텍스트 증강)
+            // 기존 시스템 메시지 가져오기
+            SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
+                  
+            // 템플릿을 사용해 시스템 지시사항과 대화 히스토리 결합
+            // 예: "지시사항: {instructions}\n대화 기록: {memory}"
+            String augmentedSystemText = this.systemPromptTemplate
+               .render(Map.of("instructions", systemMessage.getText(), 
+                              "memory", memory));
+              
+            // 4. 증강된 시스템 메시지로 새로운 요청 객체 생성
+            // mutate()를 사용해 기존 요청을 복사하고 프롬프트만 수정
+            ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
+               .prompt(chatClientRequest.prompt().augmentSystemMessage(augmentedSystemText))
+               .build();
+              
+            // 5. 현재 사용자 메시지를 대화 메모리에 추가
+            // (시스템 메시지 생성 후에 추가 - 현재 메시지는 다음 요청에서 사용됨)
+            UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+                  
+            // ChatMemory에 현재 사용자 메시지 저장 (다음 대화에서 컨텍스트로 활용)
+            this.chatMemory.add(conversationId, userMessage);
+              
+            // 6. 메모리가 증강된 요청 객체 반환
+            // AI는 이제 전체 대화 히스토리를 포함한 컨텍스트로 응답 생성
+            return processedChatClientRequest;
+        }
+
+      @Override
+      public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+          // 1. AI 어시스턴트 응답 메시지를 담을 리스트 초기화
+          List<Message> assistantMessages = new ArrayList<>();
+          
+          // 2. 스트리밍 응답 처리 (단일 결과가 있는 경우)
+          // 스트리밍 모드에서는 하나의 결과만 반환되므로 별도 처리
+          if (chatClientResponse.chatResponse() != null && 
+              chatClientResponse.chatResponse().getResult() != null &&
+              chatClientResponse.chatResponse().getResult().getOutput() != null) {
+             // 단일 결과를 리스트로 래핑
+             assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
+          }
+          // 3. 일반(비스트리밍) 응답 처리 (여러 결과가 있을 수 있는 경우)
+          else if (chatClientResponse.chatResponse() != null) {
+             // 모든 생성 결과에서 어시스턴트 메시지 추출
+             assistantMessages = chatClientResponse.chatResponse()
+                .getResults()                           // 모든 결과 가져오기
+                .stream()                               // 스트림 변환
+                .map(g -> (Message) g.getOutput())      // 각 결과에서 메시지 추출
+                .toList();                              // List로 수집
+          }
+      
+          // 4. 추출된 어시스턴트 메시지가 있으면 메모리에 추가
+          if (!assistantMessages.isEmpty()) {
+             // 현재 대화 세션의 메모리에 AI 응답 저장
+             this.chatMemory.add(
+                   this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+                   assistantMessages
+             );
+      
+             // 5. 디버그 로깅 (디버그 레벨이 활성화된 경우에만)
+             if (logger.isDebugEnabled()) {
+                // 메모리에 추가된 ASSISTANT 메시지 로그
+                logger.debug(
+                      "[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
+                      this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+                      assistantMessages
+                );
+                
+                // 메모리에 추가 후 전체 대화 히스토리 조회
+                List<Message> memoryMessages = this.chatMemory
+                   .get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
+                
+                // 현재 메모리 상태 전체 로그 (누적된 모든 대화)
+                logger.debug(
+                      "[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
+                      this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+                      memoryMessages
+                );
+             }
+          }
+          
+          // 6. 원본 응답 객체를 그대로 반환
+          // after() 메서드는 응답을 수정하지 않고, 메모리 저장과 로깅만 수행
+          return chatClientResponse;
+      }
+      ```   
+
+- MessageChatMemoryAdvisor: 과거 대화를 Message 객체 배열 형태로 유지하며 현재 요청의 메시지 리스트에 직접 병합하여 전체 대화 히스토리를 AI에게 전달합니다.
+    - Before: 과거 대화를 메모리에서 조회하여 현재 요청의 메시지 리스트에 추가합니다.
+    - After: 모델의 응답을 받은 후, 새로운 어시스턴트 메시지를 메모리에 저장합니다.
+
+        ```Java
+        @Override
+        public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+            // 현재 대화 세션의 고유 ID 획득 (없으면 기본값 사용)
+            String conversationId = getConversationId(chatClientRequest.context(), this.defaultConversationId);
+      
+            // 1. 현재 대화의 메모리(대화 히스토리) 조회
+            // ChatMemory에서 이 대화 세션의 모든 과거 메시지 가져오기
+            // (USER, ASSISTANT, SYSTEM 등 모든 타입의 메시지 포함)
+            List<Message> memoryMessages = this.chatMemory.get(conversationId);
+      
+            // 2. 메시지 리스트 재구성 (메모리 + 현재 요청)
+            // 과거 대화 히스토리를 포함하는 새로운 메시지 리스트 생성
+            List<Message> processedMessages = new ArrayList<>(memoryMessages);  // 기존 메모리 복사
+          
+            // 현재 요청의 지시사항(instructions) 메시지들을 추가
+            // instructions에는 SystemMessage, UserMessage 등이 포함될 수 있음
+            processedMessages.addAll(chatClientRequest.prompt().getInstructions());
+      
+            // 3. 재구성된 메시지 리스트로 새로운 요청 객체 생성
+            // mutate()를 중첩 사용하여 요청과 프롬프트를 모두 수정
+            ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
+               .prompt(
+                  chatClientRequest.prompt()
+                     .mutate()
+                     .messages(processedMessages)  // 과거 대화 + 현재 요청으로 메시지 교체
+                     .build()
+               )
+               .build();
+      
+            // 4. 현재 사용자 메시지를 대화 메모리에 추가
+            // 다음 대화 턴에서 컨텍스트로 활용하기 위해 저장
+            UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+            this.chatMemory.add(conversationId, userMessage);
+      
+            // 5. 메모리가 포함된 요청 객체 반환
+            // AI는 이제 전체 대화 히스토리가 포함된 메시지 리스트로 응답 생성
+            return processedChatClientRequest;
+        }
+
+        @Override
+        public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+            // 1. AI 어시스턴트 응답 메시지를 담을 리스트 초기화
+            List<Message> assistantMessages = new ArrayList<>();
+      
+            // 2. 응답에서 모든 어시스턴트 메시지 추출 (null 안전성 체크)
+            if (chatClientResponse.chatResponse() != null) {
+                // 모든 생성 결과에서 어시스턴트 메시지 추출
+                assistantMessages = chatClientResponse.chatResponse()
+                        .getResults()                           // 모든 결과 가져오기 (여러 개일 수 있음)
+                        .stream()                               // 스트림으로 변환
+                        .map(g -> (Message) g.getOutput())      // 각 결과에서 실제 메시지 객체 추출
+                        .toList();                              // List로 수집
+            }
+      
+            // 3. AI 응답을 대화 메모리에 추가
+            // 현재 대화 세션(conversationId)의 메모리에 어시스턴트 메시지 저장
+            // 다음 대화 턴에서 컨텍스트로 활용하기 위함
+            this.chatMemory.add(
+                    this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+                    assistantMessages
+            );
+      
+            // 4. 원본 응답 객체를 그대로 반환
+            // after() 메서드는 응답을 수정하지 않고, 메모리 저장만 수행 (Pass-through)
+            return chatClientResponse;
+        }
+        ```
+
+- ChatModelCallAdvisor: 응답 형식 지시사항(JSON, XML 등)을 프롬프트에 추가하고 Advisor 체인을 우회하여 ChatModel을 직접 호출합니다.
+
+    ```Java
+    @Override
+    public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+        // 1. 입력 유효성 검증
+        // chatClientRequest가 null이면 IllegalArgumentException 발생
+        Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
+    
+        // 2. 포맷 지시사항 추가 (응답 구조화)
+        // 요청에 출력 형식(JSON, XML 등)에 대한 지시사항을 프롬프트에 추가
+        // 예: "다음 JSON 형식으로 응답하세요: {...}"
+        ChatClientRequest formattedChatClientRequest = augmentWithFormatInstructions(chatClientRequest);
+    
+        // 3. ChatModel 직접 호출
+        // Advisor 체인을 우회하고 ChatModel을 직접 호출하여 응답 생성
+        // (callAdvisorChain.nextCall()을 사용하지 않음에 주목!)
+        ChatResponse chatResponse = this.chatModel.call(formattedChatClientRequest.prompt());
+        
+        // 4. ChatClientResponse 생성 및 반환
+        // AI 응답과 요청 컨텍스트를 포함한 응답 객체 구성
+        return ChatClientResponse.builder()
+            .chatResponse(chatResponse)                              // AI 모델의 응답
+            .context(Map.copyOf(formattedChatClientRequest.context())) // 요청 컨텍스트 복사 (불변)
+            .build();
+    }
+    ```
+
+- QuestionAnswerAdvisor: 사용자 질문과 관련된 문서를 벡터 검색으로 찾아 프롬프트에 추가하고(RAG), 검색된 문서를 응답 메타데이터로 제공합니다.
+    - Before: 벡터 검색으로 관련 문서를 찾아 사용자 질문에 컨텍스트로 추가하는 RAG의 Retrieval + Augmentation 단계 수행합니다.
+    - After: 검색된 문서들을 응답 메타데이터에 포함시켜 AI 답변의 출처를 추적 가능하게 합니다.
+
+        ```Java
+        @Override
+        public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+          // 1. 벡터 저장소에서 유사한 문서 검색 (RAG의 "Retrieval" 단계)
+          // 기본 검색 설정을 복사하고 현재 사용자 질문으로 쿼리 설정
+          var searchRequestToUse = SearchRequest.from(this.searchRequest)
+             .query(chatClientRequest.prompt().getUserMessage().getText())  // 사용자 질문을 검색 쿼리로 사용
+             .filterExpression(doGetFilterExpression(chatClientRequest.context()))  // 컨텍스트 기반 필터 적용
+             .build();
+      
+          // 벡터 유사도 검색 실행 - 질문과 관련된 문서들 찾기
+          List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
+      
+          // 2. 검색된 문서들을 컨텍스트에 추가
+          // 요청 컨텍스트 복사 후 검색된 문서 저장 (나중에 메타데이터로 활용)
+          Map<String, Object> context = new HashMap<>(chatClientRequest.context());
+          context.put(RETRIEVED_DOCUMENTS, documents);
+      
+          // 검색된 문서들의 텍스트를 하나의 문자열로 결합
+          // 각 문서는 줄바꿈으로 구분
+          String documentContext = documents == null ? ""
+                : documents.stream()
+                   .map(Document::getText)                      // 각 문서의 텍스트 추출
+                   .collect(Collectors.joining(System.lineSeparator()));  // 줄바꿈으로 연결
+      
+          // 3. 사용자 프롬프트를 문서 컨텍스트로 증강 (RAG의 "Augmentation" 단계)
+          UserMessage userMessage = chatClientRequest.prompt().getUserMessage();
+          
+          // 템플릿을 사용해 원본 질문과 검색된 문서 컨텍스트를 결합
+          // 예: "다음 문서를 참고하여 '{query}'에 답변하세요:\n{question_answer_context}"
+          String augmentedUserText = this.promptTemplate
+             .render(Map.of("query", userMessage.getText(), 
+                            "question_answer_context", documentContext));
+      
+          // 4. 증강된 프롬프트로 새로운 요청 생성
+          // 원본 사용자 메시지를 문서 컨텍스트가 포함된 버전으로 교체
+          return chatClientRequest.mutate()
+             .prompt(chatClientRequest.prompt().augmentUserMessage(augmentedUserText))  // 증강된 메시지로 교체
+             .context(context)  // 검색된 문서를 컨텍스트에 포함
+             .build();
+        }
+    
+      
+        @Override
+        public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+            // 1. ChatResponse 빌더 준비
+            ChatResponse.Builder chatResponseBuilder;
+          
+            // 기존 응답이 없으면 새로운 빌더 생성, 있으면 기존 응답에서 복사
+            if (chatClientResponse.chatResponse() == null) {
+               chatResponseBuilder = ChatResponse.builder();
+            }
+            else {
+               chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse());
+            }
+          
+            // 2. 검색된 문서를 응답 메타데이터에 추가
+            // before()에서 검색한 문서들을 응답의 메타데이터로 포함
+            // 사용자가 AI 답변의 출처(source documents)를 확인할 수 있도록 함
+            chatResponseBuilder.metadata(RETRIEVED_DOCUMENTS, 
+                                          chatClientResponse.context().get(RETRIEVED_DOCUMENTS));
+          
+            // 3. 메타데이터가 추가된 응답 객체 반환
+            return ChatClientResponse.builder()
+               .chatResponse(chatResponseBuilder.build())  // 메타데이터 포함된 응답
+               .context(chatClientResponse.context())       // 원본 컨텍스트 유지
+               .build();
+        }
+        ```
+
+- SafeGuardAdvisor: 민감한 단어가 포함된 요청을 사전에 차단하여 부적절한 콘텐츠가 AI 모델에 전달되는 것을 방지하는 필터링합니다.
+
+    ```Java
+    @Override
+    public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+        // 1. 민감한 단어 검사 및 차단
+        // 민감한 단어 목록이 존재하고, 프롬프트에 민감한 단어가 포함되어 있는지 확인
+        if (!CollectionUtils.isEmpty(this.sensitiveWords)  // 민감 단어 목록이 비어있지 않은 경우
+              && this.sensitiveWords.stream()               // 스트림으로 변환
+                 .anyMatch(w -> chatClientRequest.prompt()  // 하나라도 매치되면 true
+                    .getContents()                          // 프롬프트의 전체 내용 가져오기
+                    .contains(w))) {                        // 민감 단어 포함 여부 확인
+           
+           // 민감한 단어가 발견되면 AI 호출 없이 실패 응답 반환
+           // (비용 절감 + 보안 강화 + 빠른 응답)
+           return createFailureResponse(chatClientRequest);
+        }
+    
+        // 2. 민감한 단어가 없으면 다음 Advisor 또는 AI 모델 호출
+        // 정상적인 요청은 체인을 따라 계속 진행
+        return callAdvisorChain.nextCall(chatClientRequest);
+    }
+    ```
+
+### 마무리
+
+Advisors API는 Prompt 요청과 응답을 가로채고 수정할 수 있는 유연한 메커니즘을 제공합니다. 이를 통해 로깅, 메모리 관리, RAG, 포맷 지시사항 추가, 민감한 단어 필터링 등 다양한 기능을 구현할
+수 있습니다.
 
 ## Reference Documentation
 
