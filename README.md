@@ -1730,6 +1730,46 @@ Filter.Expression filter = Filter.and(
 
 Spring AI의 벡터 데이터베이스 통합 기능은 백터 데이터베이스와의 상호작용을 단순화하고 대량의 문서 임베딩 및 검색 작업을 효율적으로 처리할 수 있도록 지원합니다.
 
+## Chat Memory
+
+LLM은 stateful하지 않기 때문에 대화형 애플리케이션에서 과거 대화를 기억하고 컨텍스트를 유지하는 것이 중요합니다. Spring AI는 Chat Memory API를 통해 대화 히스토리를 관리하고 이를
+프롬프트에 통합하여 보다 자연스럽고 일관된 대화를 가능하게 합니다.
+
+`ChatMemoryRepository` 인터페이스는 대화 세션별로 메시지를 저장하고 검색하는 기능만 담당하여 어떤 메시질르 보관하고 언제 제거할지는 `ChatMemory` 인터페이스가 담당합니다.
+
+### Chat Memory vs Chat History
+
+- Chat Memory: 대규모 언어 모델이 대화 전체에서 맥락 인식을 유지하기 위해 보관하고 사용하는 정보
+- Chat History: 사용자와 모델 간에 교환된 모든 메시지를 포함한 전체 대화 기록
+
+Chat Memory는 채팅 메모리를 관리하도록 설계되 였지만 항상 최적의 방법은 아닙니다. 때로는 Chat History를 유지하는 것이 더 적합할 수 있습니다.
+
+Spring AI는 ChatMemory를 빈으로 자동으로 등록합니다. 기본은 InMemoryChatMemoryRepository이며 필요에 따라 커스텀 구현체로 교체할 수 있습니다.
+
+### Memory Storage
+
+Spring AI는 다양한 Chat Memory 저장소 구현체를 제공합니다.
+
+- InMemoryChatMemoryRepository: 메모리 내에서 대화 메시지를 저장하는 기본 구현체입니다.
+- JdbcChatMemoryRepository: JDBC를 사용하여 관계형 데이터베이스에 대화 메시지를 저장합니다.
+- CassandraChatMemoryRepository: Apache Cassandra를 사용하여 대화 메시지를 저장합니다.
+- Neo4jChatMemoryRepository: Neo4j 그래프 데이터베이스를 사용하여 대화 메시지를 저장합니다.
+
+### Memory in Chat Client
+
+Spring AI는 필요에 따라 ChatClient의 메모리 동작을 구성하는 데 사용할 수 있는 몇 가지 내장 Advisor를 제공합니다.
+
+- MessageChatMemoryAdvisor: 제공된 ChatMemory 구현을 사용하여 대화 메모리를 관리합니다. 각 상호작용에서 메모리에서 대화 히스토리를 검색하고 메시지 컬렉션으로 프롬프트에 포함합니다.
+  또한 모델의 응답을 메모리에 저장합니다.
+- PromptChatMemoryAdvisor: 제공된 ChatMemory 구현을 사용하여 대화 메모리를 관리합니다. 각 상호작용에서 메모리에서 대화 히스토리를 검색하고 일반 텍스트로 시스템 프롬프트에 추가합니다.
+  또한 모델의 응답을 메모리에 저장합니다.
+- VectorStoreChatMemoryAdvisor: 제공된 VectorStore 구현을 사용하여 장기 메모리를 관리합니다. 각 상호작용에서 벡터 저장소에서 관련 문서를 검색하고 시스템 프롬프트에 추가합니다.
+  또한 모델의 응답을 벡터 저장소에 저장합니다.
+
+### 마무리
+
+Spring AI의 Chat Memory API는 대화형 애플리케이션에서 대화 히스토리를 효과적으로 관리하고 활용할 수 있는 다양한 도구와의 통합을 제공합니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)
