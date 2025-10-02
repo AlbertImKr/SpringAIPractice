@@ -2,8 +2,13 @@ package com.albert.springaipractice.config
 
 import org.springframework.ai.anthropic.AnthropicChatModel
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor
+import org.springframework.ai.chat.memory.ChatMemory
 import org.springframework.ai.openai.OpenAiChatModel
 import org.springframework.ai.openai.OpenAiChatOptions
+import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -11,8 +16,8 @@ import org.springframework.context.annotation.Configuration
 class AiConfig {
 
     @Bean
-    fun openAiGPT4OMini(openAiModel: OpenAiChatModel): ChatClient {
-        return ChatClient.create(
+    fun openAiGPT4OMini(openAiModel: OpenAiChatModel, chatMemory: ChatMemory, vectorStore: VectorStore): ChatClient {
+        return ChatClient.builder(
             openAiModel.mutate()
                 .defaultOptions(
                     OpenAiChatOptions.builder()
@@ -23,6 +28,12 @@ class AiConfig {
                 )
                 .build()
         )
+            .defaultAdvisors(
+                MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                QuestionAnswerAdvisor.builder(vectorStore).build(),
+                SimpleLoggerAdvisor(),
+            )
+            .build()
     }
 
     @Bean

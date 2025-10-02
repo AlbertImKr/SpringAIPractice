@@ -37,6 +37,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.ai:spring-ai-starter-model-openai")
     implementation("org.springframework.ai:spring-ai-starter-model-anthropic")
+    implementation("org.springframework.ai:spring-ai-advisors-vector-store")
+    implementation("org.springframework.ai:spring-ai-starter-vector-store-pinecone")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
