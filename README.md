@@ -1819,7 +1819,7 @@ ChatResponse response = ChatClient.builder(chatModel)
 
 이 예제에서는 `QuestionAnswerAdvisor`가 벡터 저장소에서 관련 문서를 검색하고 이를 사용자 질문과 결합하여 AI 모델에 전달합니다.
 
-**고급 살정:**
+**고급 설정:**
 
 ```Java
 var qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
