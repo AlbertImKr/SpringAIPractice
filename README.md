@@ -1770,8 +1770,203 @@ Spring AI는 필요에 따라 ChatClient의 메모리 동작을 구성하는 데
 
 Spring AI의 Chat Memory API는 대화형 애플리케이션에서 대화 히스토리를 효과적으로 관리하고 활용할 수 있는 다양한 도구와의 통합을 제공합니다.
 
+## 문서 검색 기반 답변 (Retrieval Augmented Generation, RAG)
+
+Spring AI는 문서 검색 기반 답변(RAG) 패턴을 직접 구축하거나 Advisors API를 사용하여 기본 제공 RAG 흐름을 활용할 수 있는 모듈식 아키텍처를 제공합니다.
+
+### RAG Overview
+
+LLM은 훈련 데이터에 포함되지 않은 최신 정보나 특정 도메인 지식에 액세스할 수 없는 한계가 있습니다. 검색 증강 생성(RAG)은 대규모 언어 모델의 출력을 최적화하여 응답을 생성하기 전에 훈련 데이터 소스 외부의
+신뢰할 수 있는 기술 자료를 참조하도록 하는 프로세스입니다.
+
+RAG의 주요 구성 요소와 작동 방식은 다음과 같습니다.
+
+1. 외부 데이터 생성: LLM의 원래 학습 데이터 외부에서 관련 문서를 벡터 저장소에 저장합니다.
+2. 관련 문서 검색: 사용자가 질문을 하면 벡터 저장소에서 임베딩된 문서와의 유사도를 기반으로 관련 문서를 검색합니다.
+3. LLM 프롬프트 증강: RAG 프롬프트 템플릿을 사용하여 검색된 문서를 사용자 질문과 결합하여 LLM에 대한 증강된 프롬프트를 생성합니다.
+4. 응답 생성: 증강된 프롬프트를 LLM에 전달하여 응답을 생성합니다.
+5. 외부 데이터 업데이트: 벡터 저장소의 문서를 정기적으로 업데이트하여 최신 정보를 반영합니다.
+
+### RAG with Advisors API
+
+Spring AI의 Advisors API를 사용하면 RAG 패턴을 쉽게 구현할 수 있습니다.
+
+기본으로 제공하는 구현체는 2가지입니다.
+
+- QuestionAnswerAdvisor:
+- RetrievalAugmentationAdvisor
+
+#### QuestionAnswerAdvisor
+
+`QuestionAnswerAdvisor`는 사용자 질문이 AI 모델로 전송될 때 벡터 저장소에서 관련 문서를 검색하고 이를 프롬프트에 추가해줍니다.
+
+**기본 사용법:**
+
+```Java
+ChatResponse response = ChatClient.builder(chatModel)
+        .build().prompt()
+        .advisors(new QuestionAnswerAdvisor(vectorStore))
+        .user(userText)
+        .call()
+        .chatResponse();
+```
+
+이 예제에서는 `QuestionAnswerAdvisor`가 벡터 저장소에서 관련 문서를 검색하고 이를 사용자 질문과 결합하여 AI 모델에 전달합니다.
+
+**고급 살정:**
+
+```Java
+var qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(SearchRequest.builder()
+                .similarityThreshold(0.8d)
+                .topK(6)
+                .build())
+        .build();
+```
+
+이 예제에서는 `searchRequest`를 정의하여 검색된 문서의 유사도 임계값과 반환할 최대 문서 수를 설정합니다.
+
+**동적 필터링:**
+
+```Java
+String content = chatClient.prompt()
+        .user("Please answer my question XYZ")
+        .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
+        .call()
+        .content();
+```
+
+이 예제에서는 `FILTER_EXPRESSION` 파라미터를 사용하여 벡터 저장소에서 검색할 때 동적으로 필터 조건을 지정합니다.
+
+**Custom 프롬프트 템플릿:**
+
+`QuestionAnswerAdvisor`는 기본 프롬프트 템플릿을 제공하지만 필요에 따라 사용자 정의 템플릿을 사용할 수도 있습니다. `promptTemplate` 빌더 메서드를 사용하여 사용자 정의 템플릿을
+지정할 수 있습니다.
+
+Custom `PromptTemplate`은 모든 `TemplateRenderer` 구현체를 지원합니다. 중요한 점은 템플릿에서 2개의 변수를 사용해야 한다는 것입니다.
+
+- `query`: 원본 사용자 질문
+- `question_answer_context`: 벡터 저장소에서 검색된 문서들의 텍스트
+
+#### RetrievalAugmentationAdvisor
+
+`RetrievalAugmentationAdvisor`는 모듈형 아키텍처를 기반으로 한 가장 기본적인 RAG 플로우의 즉시 사용 가능한 구현을 제공하는 Advisor입니다.
+
+**Native RAG 구현:**
+
+```Java
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+```
+
+이 예제에서는 `RetrievalAugmentationAdvisor`를 사용하여 벡터 저장소에서 관련 문서를 검색하고 이를 프롬프트에 추가하여 AI 모델에 전달합니다.
+
+**Advanced RAG 구현:**
+
+```Java
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .queryTransformers(RewriteQueryTransformer.builder()
+                .chatClientBuilder(chatClientBuilder.build().mutate())
+                .build())
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+```
+
+### Modules
+
+Spring AI는
+`[Modular RAG: Transforming RAG Systems into LEGO-like Reconfigurable Frameworks](https://arxiv.org/abs/2407.21059)`
+논문에서 설명하는 모듈형 RAG 아키텍처를 구현합니다. 이 아키텍처는 RAG 시스템을 LEGO 블록처럼 재구성 가능한 프레임워크로 변환하여 다양한 구성 요소를 쉽게 교체하고 확장할 수 있도록 합니다.
+
+- **Pre-Retrieval 모듈**: 사용자 쿼리를 처리하여 최적의 검색 결과를 달성하는 역할을 담당합니다.
+    - **Query Transformation**: 입력 쿼리를 변환하여 검색 작업에 더 효과적으로 만드는 구성 요소입니다. 잘못 구성된 쿼리, 모호한 용어, 복잡한 어휘 또는 지원되지 않는 언어와 같은 문제를
+      해결합니다.
+        - `CompressionQueryTransformer`:
+            - 대화 기록과 후속 쿼리를 대화의 본질을 포착하는 독립적인 쿼리로 압축합니다.
+            - 대화 기록이 길고 후속 쿼리가 대화 컨텍스트와 관련이 있을 때 유용합니다.
+        - `RewriteQueryTransformer`:
+            - 사용자 쿼리를 재작성하여 벡터 스토어나 웹 검색 엔진과 같은 대상 시스템을 쿼리할 때 더 나은 결과를 제공합니다.
+            - 사용자 쿼리가 장황하거나 모호하거나 검색 결과의 품질에 영향을 줄 수 있는 관련 없는 정보를 포함할 때 유용합니다.
+        - `TranslationQueryTransformer`:
+            - 문서 임베딩을 생성하는 데 사용되는 임베딩 모델이 지원하는 대상 언어로 쿼리를 번역합니다.
+            - 쿼리가 이미 대상 언어인 경우 변경되지 않고 반환되며 쿼리의 언어를 알 수 없는 경우에도 변경되지 않고 반환됩니다.
+    - **Query Expansion**: 입력 쿼리를 쿼리 목록으로 확장하는 구성 요소로 대안적인 쿼리 공식을 제공하거나 복잡한 문제를 더 간단한 하위 쿼리로 분해하여 잘못 구성된 쿼리와 같은 문제를
+      해결합니다.
+        - `MultiQueryExpander`: 쿼리를 의미상 다양한 여러 변형으로 확장하여 다양한 관점을 포착하고 추가적인 컨텍스트 정보를 검색하고 관련 결과를 찾을 가능성을 높입니다.
+- **Retrieval 모듈**: 벡터 스토어와 같은 데이터 시스템을 쿼리하고 가장 관련성 높은 문서를 검색하는 역할을 담당합니다.
+    - **Document Searcher**: 검색 엔진, 벡터 스토어, 데이터베이스 또는 지식 그래프와 같은 기본 데이터 소스에서 Documents를 검색하는 구성 요소입니다.
+        - `VectorStoreDocumentRetriever`: 입력 쿼리와 의미상 유사한 문서를 벡터 스토어에서 검색합니다. 메타데이터 기반 필터링, 유사도 임계값, top-k 결과를 지원합니다.
+    - **Document Join**: 여러 쿼리와 여러 데이터 소스를 기반으로 검색된 문서를 단일 문서 컬렉션으로 결합하는 구성 요소입니다.
+        - `ConcatenationDocumentJoiner`: 여러 쿼리와 여러 데이터 소스에서 검색된 문서를 단일 문서 컬렉션으로 연결하여 결합합니다. 중복 문서의 경우 첫 번째 발생을
+          유지합니다.
+- **Post-Retrieval 모듈**: 검색된 문서를 처리하여 최적의 생성 결과를 달성하는 역할을 담당합니다.
+    - **Document Post-Processing**:
+        - 쿼리를 기반으로 검색된 문서를 후처리하는 구성 요소로 lost-in-the-middle, 모델의 컨텍스트 길이 제한, 검색된 정보의 노이즈와 중복성 감소 필요성과 같은 문제를 해결합니다.
+        - 예를 들어 쿼리와의 관련성에 따라 문서를 순위를 매기거나 관련 없거나 중복된 문서를 제거하거나 각 문서의 내용을 압축하여 노이즈와 중복성을 줄일 수 있습니다.
+- **Generation 모듈**: 사용자 쿼리와 검색된 문서를 기반으로 최종 응답을 생성하는 역할을 담당합니다.
+    - **Query Augmentation**: 입력 쿼리를 추가 데이터로 증강하는 구성 요소로 대규모 언어 모델이 사용자 쿼리에 답변하는 데 필요한 컨텍스트를 제공하는 데 유용합니다.
+        - `ContextualQueryAugmenter`: 제공된 문서의 내용에서 컨텍스트 데이터로 사용자 쿼리를 증강합니다.
+
+### ETL Pipeline
+
+Spring AI는 RAG 시스템을 위한 ETL(Extract, Transform, Load) 파이프라인을 제공합니다. 이 파이프라인은 원시 데이터 소스에서 구조화된 벡터 스토어로의 흐름을 조정하여 AI 모델이
+검색하기에 최적의 형태로 데이터를 준비합니다.
+
+ETL 파이프라인은 3 가지 주요 구성 요소로 구성됩니다.
+
+- DocumentReader(Extract): `Supplier<List<Document>>` 인터페이스를 구현하여 다양한 소스에서 문서를 읽어옵니다.
+- DocumentTransformer(Transform): `Function<List<Document>, List<Document>>` 인터페이스를 구현하여 문서를 전처리하고 변환합니다.
+- DocumentWriter(Load): `Consumer<List<Document>>` 인터페이스를 구현하여 문서를 벡터 스토어에 저장합니다.
+
+![rag-etl-pipeline.png](assets/rag-etl-pipeline.png)
+> 출처: https://docs.spring.io/spring-ai/reference/api/etl-pipeline.html
+
+#### DocumentReader
+
+다양한 문서 형식을 지원하는 리더들을 제공합니다:
+
+1. JSON 문서 처리 - `JsonReader`
+2. 텍스트 문서 처리 - `TextReader`
+3. HTML 문서 처리 - `JsoupDocumentReader`
+4. Markdown 문서 처리 - `MarkdownDocumentReader`
+5. PDF 문서 처리 - `PagePdfDocumentReader`,`ParagraphPdfDocumentReader`
+6. 다양한 문서 형식 처리 - `TikaDocumentReader`
+
+#### DocumentTransformer
+
+문서를 처리하고 변환하는 다양한 트랜스포머를 제공합니다:
+
+1. 텍스트 분할 - `TokenTextSplitter`
+2. 키워드 메타데이터 추가 - `KeywordMetadataEnricher`
+3. 요약 메타데이터 추가 - `SummaryMetadataEnricher`
+
+#### DocumentWriter
+
+처리된 문서를 다양한 형태로 저장하는 writer들을 제공합니다:
+
+1. 파일 저장 - `FileDocumentWriter`
+2. 벡터 스토어 저장 - `vectorStore.write`
+
+### 마무리
+
+Spring AI의 RAG 모듈식 아키텍처와 ETL 파이프라인은 RAG 시스템을 쉽게 구축하고 확장할 수 있는 유연한 프레임워크를 제공합니다. 이를 통해 개발자는 다양한 구성 요소를 조합하여 자신의 요구에 맞는
+RAG 솔루션을 구현할 수 있습니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)
-
+- [RAG](https://aws.amazon.com/ko/what-is/retrieval-augmented-generation/)
 

@@ -6,13 +6,10 @@ import org.springframework.stereotype.Service
 
 @Service
 class ChatModelService(
-    @Qualifier("openAiGPT4OMini") private val openAiGPT4OMini: ChatClient,
-    @Qualifier("openAiGPT4") private val chatClientGPT4: ChatClient,
-    @Qualifier("authropicChatClient") private val anthropicChatClient: ChatClient,
+    @param:Qualifier("openAiGPT4OMini") private val openAiGPT4OMini: ChatClient,
+    @param:Qualifier("openAiGPT4") private val chatClientGPT4: ChatClient,
+    @param:Qualifier("authropicChatClient") private val anthropicChatClient: ChatClient,
 ) {
-
-    private val NO_RESPONSE = "No response generated."
-
     fun generateText(question: String): String {
         return openAiGPT4OMini.prompt()
             .user(question)
@@ -32,5 +29,9 @@ class ChatModelService(
             .user(question)
             .call()
             .content() ?: NO_RESPONSE
+    }
+
+    companion object {
+        const val NO_RESPONSE = "No response generated."
     }
 }

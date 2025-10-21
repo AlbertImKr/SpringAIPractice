@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Spring AI RAG 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+
+        .section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+
+        .file-upload {
+            border: 2px dashed #ddd;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .file-upload:hover {
+            border-color: #3498db;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🤖 Spring AI RAG 시스템 테스트</h1>
+
+    <!-- ETL 초기화 섹션 -->
+    <div class="section">
+        <h2>📚 1. 문서 초기화 (ETL)</h2>
+        <p>벡터 스토어에 테스트 문서들을 로드합니다.</p>
+        <button onclick="initializeDocuments()">문서 초기화</button>
+        <button onclick="clearVectorStore()">벡터 스토어 초기화</button>
+        <div class="response hidden" id="etl-response"></div>
+    </div>
+
+    <!-- 문서 검색 섹션 -->
+    <div class="section">
+        <h2>🔍 2. 문서 검색</h2>
+        <div class="form-group">
+            <label for="search-query">검색 쿼리:</label>
+            <input id="search-query" placeholder="예: Spring AI란 무엇인가?" type="text"/>
+        </div>
+        <div class="form-group">
+            <label for="search-topk">결과 개수 (topK):</label>
+            <input id="search-topk" max="20" min="1" type="number" value="5"/>
+        </div>
+        <button onclick="searchDocuments()">문서 검색</button>
+        <div class="response hidden" id="search-response"></div>
+    </div>
+
+    <!-- RAG 질문 섹션 -->
+    <div class="section">
+        <h2>🎯 3. RAG 질문-응답</h2>
+        <div class="form-group">
+            <label for="rag-question">질문:</label>
+            <textarea id="rag-question" placeholder="예: Spring AI의 주요 기능은 무엇인가요?"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="rag-type">RAG 타입:</label>
+            <select id="rag-type">
+                <option value="basic">Basic RAG</option>
+                <option value="advanced">Advanced RAG (similarity: 0.7, topK: 5)</option>
+                <option value="custom-prompt">Custom Prompt RAG</option>
+                <option value="filtered">Filtered RAG</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="filter-group" style="display: none;">
+            <label for="filter-expression">필터 표현식:</label>
+            <input id="filter-expression" placeholder="예: type == 'Spring AI'" type="text"/>
+        </div>
+
+        <button onclick="askQuestion()">질문하기</button>
+        <div class="response hidden" id="rag-response"></div>
+    </div>
+
+    <!-- 파일 업로드 섹션 -->
+    <div class="section">
+        <h2>📤 4. 파일 업로드 및 처리</h2>
+        <div class="file-upload">
+            <input accept=".txt,.md, .pdf,.docx" id="file-input" type="file"/>
+            <p>텍스트 파일을 선택하세요 (.txt, .md, .pdf, .docx)</p>
+        </div>
+
+        <div class="form-group">
+            <label for="file-type">문서 타입:</label>
+            <input id="file-type" type="text" value="document"/>
+        </div>
+
+        <div class="form-group">
+            <label for="file-category">카테고리:</label>
+            <input id="file-category" type="text" value="general"/>
+        </div>
+
+        <div class="form-group">
+            <label for="chunk-size">청크 크기:</label>
+            <input id="chunk-size" max="2000" min="100" type="number" value="800"/>
+        </div>
+
+        <div class="form-group">
+            <label for="chunk-overlap">청크 겹침:</label>
+            <input id="chunk-overlap" max="500" min="0" type="number" value="100"/>
+        </div>
+
+        <button onclick="uploadFile()">파일 업로드 및 처리</button>
+        <div class="response hidden" id="upload-response"></div>
+    </div>
+
+    <!-- 텍스트 직접 처리 섹션 -->
+    <div class="section">
+        <h2>✏️ 5. 텍스트 직접 처리</h2>
+        <div class="form-group">
+            <label for="direct-text">텍스트 내용:</label>
+            <textarea id="direct-text" placeholder="처리할 텍스트를 입력하세요..." style="height: 150px;"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="text-type">문서 타입:</label>
+            <input id="text-type" type="text" value="document"/>
+        </div>
+
+        <div class="form-group">
+            <label for="text-category">카테고리:</label>
+            <input id="text-category" type="text" value="general"/>
+        </div>
+
+        <button onclick="processText()">텍스트 처리</button>
+        <div class="response hidden" id="text-response"></div>
+    </div>
+</div>
+
+<script>
+    // RAG 타입 변경 시 필터 그룹 표시/숨김
+    document.getElementById('rag-type').addEventListener('change', function () {
+        const filterGroup = document.getElementById('filter-group');
+        if (this.value === 'filtered') {
+            filterGroup.style.display = 'block';
+        } else {
+            filterGroup.style.display = 'none';
+        }
+    });
+
+    // 공통 함수: 응답 표시
+    function showResponse(elementId, message, isError = false, isLoading = false) {
+        const element = document.getElementById(elementId);
+        element.className = `response ${isError ? 'error' : isLoading ? 'loading' : 'success'}`;
+        element.textContent = message;
+        element.classList.remove('hidden');
+    }
+
+    // 공통 함수: API 호출
+    async function callApi(url, method = 'POST', body = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        if (body) {
+            options.body = JSON.stringify(body);
+        }
+
+        return await fetch(url, options);
+    }
+
+    // 1. 문서 초기화
+    async function initializeDocuments() {
+        showResponse('etl-response', '문서를 초기화하고 있습니다...', false, true);
+
+        try {
+            const response = await callApi('/api/etl/initialize');
+            const data = await response.json();
+
+            if (data.success) {
+                showResponse('etl-response', `✅ ${data.message}\n상세 정보: ${JSON.stringify(data.details, null, 2)}`);
+            } else {
+                showResponse('etl-response', `❌ ${data.message}`, true);
+            }
+        } catch (error) {
+            showResponse('etl-response', `❌ 오류 발생: ${error.message}`, true);
+        }
+    }
+
+    // 2. 문서 검색
+    async function searchDocuments() {
+        const query = document.getElementById('search-query').value.trim();
+        const topK = parseInt(document.getElementById('search-topk').value);
+
+        if (!query) {
+            showResponse('search-response', '❌ 검색 쿼리를 입력해주세요.', true);
+            return;
+        }
+
+        showResponse('search-response', '문서를 검색하고 있습니다...', false, true);
+
+        try {
+            const response = await callApi('/api/etl/search', 'POST', {query, topK});
+            const data = await response.json();
+
+            if (data.success && data.results) {
+                let resultText = `✅ 검색 완료 (${data.results.length}개 결과)\n\n`;
+                data.results.forEach((result, index) => {
+                    resultText += `--- 결과 ${index + 1} ---\n`;
+                    resultText += `메타데이터: ${JSON.stringify(result.metadata, null, 2)}\n`;
+                    resultText += `내용: ${result.content.substring(0, 200)}...\n\n`;
+                });
+                showResponse('search-response', resultText);
+            } else {
+                showResponse('search-response', `❌ ${data.message || '검색 실패'}`, true);
+            }
+        } catch (error) {
+            showResponse('search-response', `❌ 오류 발생: ${error.message}`, true);
+        }
+    }
+
+    // 3. RAG 질문-응답
+    async function askQuestion() {
+        const question = document.getElementById('rag-question').value.trim();
+        const ragType = document.getElementById('rag-type').value;
+
+        if (!question) {
+            showResponse('rag-response', '❌ 질문을 입력해주세요.', true);
+            return;
+        }
+
+        showResponse('rag-response', 'AI가 답변을 생성하고 있습니다...', false, true);
+
+        try {
+            let url = `/api/rag/${ragType}`;
+            let body = {question};
+
+            if (ragType === 'filtered') {
+                const filterExpression = document.getElementById('filter-expression').value.trim();
+                body.filterExpression = filterExpression || null;
+            }
+
+            const response = await callApi(url, 'POST', body);
+            const data = await response.json();
+
+            let resultText = `✅ 답변 생성 완료\n\n`;
+            resultText += `질문: ${data.question}\n`;
+            resultText += `타입: ${data.type}\n`;
+            if (data.filter) {
+                resultText += `필터: ${data.filter}\n`;
+            }
+            resultText += `\n답변:\n${data.answer}`;
+
+            showResponse('rag-response', resultText);
+        } catch (error) {
+            showResponse('rag-response', `❌ 오류 발생: ${error.message}`, true);
+        }
+    }
+
+    // 4. 파일 업로드
+    async function uploadFile() {
+        const fileInput = document.getElementById('file-input');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showResponse('upload-response', '❌ 파일을 선택해주세요.', true);
+            return;
+        }
+
+        showResponse('upload-response', '파일을 업로드하고 처리하고 있습니다...', false, true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', document.getElementById('file-type').value);
+            formData.append('category', document.getElementById('file-category').value);
+            formData.append('chunkSize', document.getElementById('chunk-size').value);
+            formData.append('chunkOverlap', document.getElementById('chunk-overlap').value);
+
+            const response = await fetch('/api/etl/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showResponse('upload-response', `✅ ${data.message}\n처리된 청크 수: ${data.details?.processed_chunks || 'N/A'}`);
+            } else {
+                showResponse('upload-response', `❌ ${data.message}`, true);
+            }
+        } catch (error) {
+            showResponse('upload-response', `❌ 오류 발생: ${error.message}`, true);
+        }
+    }
+
+    // 5. 텍스트 직접 처리
+    async function processText() {
+        const text = document.getElementById('direct-text').value.trim();
+
+        if (!text) {
+            showResponse('text-response', '❌ 처리할 텍스트를 입력해주세요.', true);
+            return;
+        }
+
+        showResponse('text-response', '텍스트를 처리하고 있습니다...', false, true);
+
+        try {
+            const body = {
+                text: text,
+                type: document.getElementById('text-type').value,
+                category: document.getElementById('text-category').value,
+                chunkSize: parseInt(document.getElementById('chunk-size').value),
+                chunkOverlap: parseInt(document.getElementById('chunk-overlap').value)
+            };
+
+            const response = await callApi('/api/etl/process-text', 'POST', body);
+            const data = await response.json();
+
+            if (data.success) {
+                showResponse('text-response', `✅ ${data.message}\n처리된 청크 수: ${data.details?.processed_chunks || 'N/A'}`);
+            } else {
+                showResponse('text-response', `❌ ${data.message}`, true);
+            }
+        } catch (error) {
+            showResponse('text-response', `❌ 오류 발생: ${error.message}`, true);
+        }
+    }
+</script>
+</body>
+</html>
