@@ -5,6 +5,12 @@
 - [Prompts](#prompts)
 - [Structured Output Converter](#structured-output-converter)
 - [Audio Models](#audio-models)
+- [Image Model API](#image-model-api)
+- [Adivisors API](#adivisors-api)
+- [Embeddings Model API](#embeddings-model-api)
+- [Vector Databases](#vector-databases)
+- [Chat Memory](#chat-memory)
+- [문서 검색 기반 답변 (Retrieval Augmented Generation, RAG)](#문서-검색-기반-답변-retrieval-augmented-generation-rag)
 
 ## Chat Model API
 
