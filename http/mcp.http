@@ -1,0 +1,8 @@
+### MCP 클라이언트 목록 조회
+GET http://localhost:8080/mcp/clients
+Accept: application/json
+
+
+### MCP Tool Callback 목록 조회
+GET http://localhost:8080/mcp/tool-callbacks
+Accept: application/json

@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: mcpserver1
+  ai:
+    mcp:
+      server:
+        name: webflux-mcp-server1
+        type: ASYNC
+        instructions: "This server provides datatime information tools and resources."
+server:
+  port: 8081

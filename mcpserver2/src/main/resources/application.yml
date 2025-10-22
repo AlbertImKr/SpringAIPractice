@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: mcpserver2
+  ai:
+    mcp:
+      server:
+        name: webflux-mcp-server2
+        instructions: "This server provides points of level information tools and resources."
+server:
+  port: 8082
