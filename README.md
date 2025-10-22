@@ -1971,6 +1971,289 @@ ETL 파이프라인은 3 가지 주요 구성 요소로 구성됩니다.
 Spring AI의 RAG 모듈식 아키텍처와 ETL 파이프라인은 RAG 시스템을 쉽게 구축하고 확장할 수 있는 유연한 프레임워크를 제공합니다. 이를 통해 개발자는 다양한 구성 요소를 조합하여 자신의 요구에 맞는
 RAG 솔루션을 구현할 수 있습니다.
 
+## Tool Calling
+
+Spring AI는 도구 호출 기능을 통해 대규모 언어 모델(LLM)이 외부 도구 및 API와 상호작용할 수 있도록 지원합니다.
+
+### Tool Calling Overview
+
+Toll Calling(Function Calling이라고도 함)은 AI 모델이 API나 도구와 상호작용하여 기능을 화장할 수 있게 해주는 일반적인 패턴입니다.
+
+**Tool의 주요 용도:**
+
+- 정보 검색: 외부 소스(예: 데이터베이스, 웹 서비스)에서 정보를 검색하여 모델의 지식을 보강합니다.
+- 액션 실행: 소프트웨어 시스템에서 이메일 전송, 데이터베이스 레코드 생성, 폼 제출, 워크플로우 트리거링 등 특정 작업을 수행합니다.
+
+> [!IMPORTANT]
+> 모델은 도구를 직접 호출하지 않습니다. 대신 도구 호출을 위한 프롬프트 지시사항을 생성하고 애플리케이션이 이를 해석하여 실제 도구를 호출합니다. 모델은 도구로 제공된 API에 직접 액세스하지 않습니다.
+
+**Tool Calling 워크플로우:**
+
+1. 도구 정의: 애플리케이션에서 사용할 수 있는 도구(함수 또는 API)를 정의하고 채팅 요청에 포함합니다.
+2. 도구 호출 결정: 모델이 응답을 생성할 때 도구 호출이 필요하면 도구 이름과 입력 매개변수를 포함한 응답을 전송합니다.
+3. 도구 실행: 애플리케이션이 도구 이름을 식별하고 제공된 입력 매개변수로 도구를 실행합니다.
+4. 결과 처리: 도구 호출 결과를 애플리케이션에서 처리합니다.
+5. 결과 전달: 애플리케이션이 도구 호출 결과를 모델에 다시 전송합니다.
+6. 최종 응답 생성: 모델이 도구 호출 결과를 추가 컨텍스트로 사용하여 최종 응답을 생성합니다.
+
+### Quick Start 예제
+
+1. 정보 검색 도구 정의 (현재 날짜/시간):
+
+    ```Java
+    // 사용법
+    String response = ChatClient.create(chatModel)
+                    .prompt("내일 날씨 어때?")
+                    .tools(new DateTimeTools())
+                    .call()
+                    .content();
+    
+    class DateTimeTools {
+        @Tool(description = "현재 날짜와 시간 가져오기")
+        String getCurrentDateTime() {
+            return LocalDateTime.now()
+                    .atZone(LocaleContextHolder.getTimeZone().toZoneId())
+                    .toString();
+        }
+    }
+    ```
+
+2. 액션 실행 도구 정의 (알람 설정):
+
+    ```kotlin
+    // 사용법
+    openAiGPT4OMini
+            .prompt("현재로 부터 $durationInMinutes 분 후에 알람을 설정해줘.")
+            .tools(AlarmTools())
+            .call()
+            .content() ?: "No response generated."
+                    
+    class AlarmTools {
+    
+        @Tool(description = "현재 날짜와 시간을 반환합니다.")
+        fun getCurrentDateTime(): String {
+            return LocalDateTime.now()
+                .atZone(LocaleContextHolder.getTimeZone().toZoneId())
+                .toString()
+        }
+    
+        @Tool(description = "주어진 시간 후에 알람 설정을 합니다. 시간을 'YYYY-MM-DDTHH:MM' 형식으로 입력하세요.")
+        fun setAlarm(dateTime: String): String {
+            val alarmTime = LocalDateTime.parse(dateTime, ISO_LOCAL_DATE_TIME)
+            println("알람이 설정되었습니다: $alarmTime")
+            return "알람이 $dateTime 에 설정되었습니다."
+        }
+    }
+    ```
+
+`@Tool` 애노테이션을 사용하여 도구 메서드를 정의하고 설명을 제공합니다. `getCurrentDateTime` 메서드는 현재 날짜와 시간을 반환하는 도구이고 `setAlarm` 메서드는 지정된 시간에 알람을
+설정하는 도구입니다.
+
+### 도구 정의 방법
+
+Spring AI에서 두 가지 방법으로 도구를 정의할 수 있습니다.
+
+1. Methods as Tools
+2. Functional Tools
+
+### Methods as Tools
+
+Spring AI는 메서드에서 도구(즉, ToolCallback)를 지정하는 두 가지 방법을 제공합니다.
+
+- `@Tool` 애노테이션을 사용하여 도구 메서드를 정의합니다.
+- `MethodToolCallback` 클래스를 사용하여 도구 메서드를 래핑합니다.
+
+#### 선언적 방식: `@Tool` 애노테이션
+
+```kotlin
+@Tool(description = "현재 날짜와 시간을 반환합니다.")
+fun getCurrentDateTime(): String {
+    return LocalDateTime.now()
+        .atZone(LocaleContextHolder.getTimeZone().toZoneId())
+        .toString()
+}
+```
+
+`@Tool` 애노테이션 속성:
+
+- `name`: 도구 이름 (기본값: 메서드명)
+- `description`: 도구 설명 (모델이 언제/어떻게 사용할지 결정)
+- `returnDirect`: 결과를 클라이언트에 직접 반환할지 여부 (기본값: false)
+- `resultConverter`: 결과 변환기 구현체 (기본값: `DefaultToolCallResultConverter.class`)
+
+`ToolParam` 애노테이션 속성:
+
+- `description`: 매개변수 설명
+- `required`: 필수 여부 (기본값: true)
+
+#### 프로그래밍 방식: `MethodToolCallback`
+
+```kotlin
+class DataTimeTools {
+
+    fun getCurrentDateTime(): String {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString()
+    }
+}
+
+fun useMethodToolCallBack(durationInMinutes: Int): String {
+    val method = ReflectionUtils.findMethod(
+        DataTimeTools::class.java,
+        "getCurrentDateTime"
+    )!!
+
+    val toolCallback = MethodToolCallback.builder()
+        .toolDefinition( // ToolDefinitions 생성
+            ToolDefinitions.builder(method)  // 메서드로부터 ToolDefinition 생성
+                .name("getCurrentDateTime") // 도구 이름 지정
+                .description("현재의 날짜와 시간을 반환합니다.") // 도구 설명 지정
+                .build()
+        )
+        .toolMethod(method) // 도구 메서드 지정
+        .toolObject(DataTimeTools()) // 도구 객체 지정 (static 메서드인 경우 제외 가능)
+        .build()
+
+    return openAiGPT4OMini
+        .prompt("현재로 부터 $durationInMinutes 분 후에 알람을 설정해줘. 및 현재 시간을 알려줘.")
+        .toolCallbacks(toolCallback) // 도구 콜백 등록
+        .call()
+        .content() ?: "No response generated."
+}
+```
+
+#### Method Tool의 제한 사항
+
+아래와 같은 parameter와 return type은 Method Tool로 정의할 수 없습니다.
+
+- Optional
+- Asynchronous types (e.g. CompletableFuture, Future)
+- Reactive types (e.g. Flow, Mono, Flux)
+- Functional types (e.g. Function, Supplier, Consumer).
+
+### Functional Tools
+
+Spring AI는 Functional Tool을 정의하는 두 가지 방법을 제공합니다.
+
+- `FunctionToolCallback`구현을 사용하여 프로그래밍 방식으로 Functional Tool을 정의합니다.
+- `@Bean`으로 해결되는 동적으로 Functional Tool을 정의합니다.
+
+#### 프로그래밍 방식: `FunctionToolCallback`
+
+`FunctionToolCallback` 방식은 `Function`,``Supplier`, `Consumer`, `BiFunction` 등의 함수형 인터페이스를 도구로 래핑할 수 있습니다.
+
+`FunctionToolCallback.builder()` 메서드를 사용하여 도구 콜백을 생성합니다.
+
+- `name`: 도구 이름
+- `toolFunction`: 도구 함수 (함수형 인터페이스 구현체)
+- `description`: 도구 설명
+- `inputType`: 도구 입력 타입 (필수)
+- `inputSchema`: 도구 입력 스키마
+- `toolMetadata`: 도구 메타데이터
+- `toolCallResultConverter`: 도구 결과 변환기 구현체
+
+```kotlin
+fun useFunctionToolCallBack(location: String): String {
+    val conversationId = UUID.randomUUID().toString()
+    val toolCallback = FunctionToolCallback.builder(
+        "currentTime", LocalTimeService
+    )
+        .description("Get the current local time for a given location.")
+        .inputType(LocalTimeRequest::class.java)
+        .build()
+
+    return openAiGPT4OMini
+        .prompt("해당 위치($location)의 현재 시간을 알려줘.")
+        .advisors { it.param(ChatMemory.CONVERSATION_ID, conversationId) }
+        .toolCallbacks(toolCallback)
+        .call()
+        .content() ?: "No response generated."
+}
+
+val LocalTimeService: (LocalTimeRequest) -> String = { request ->
+    ZoneId.of(request.location).let {
+        LocalDateTime.now(it).toString()
+    }
+}
+
+data class LocalTimeRequest(
+    @param:ToolParam(description = "시간을 알고 싶은 위치의 시간대입니다. 예: 'Asia/Seoul', 'America/New_York'")
+    val location: String,
+)
+```
+
+### 동적 방식: `@Bean`으로 Functional Tool 정의
+
+```kotlin
+@Configuration(proxyBeanMethods = false)
+class DataTimeTools {
+
+    @Bean(CURRENT_DATETIME_TOOL)
+    @Description("The current date time in local timezone")
+    fun getCurrentDateTimeTool(): (LocalTimeRequest) -> String = { request ->
+        ZoneId.of(request.location).let {
+            LocalDateTime.now(it).toString()
+        }
+    }
+
+    companion object {
+        const val CURRENT_DATETIME_TOOL = "CURRENT_DATETIME_TOOL"
+    }
+}
+
+fun useDynamicFunctionToolCallBack(location: String): String {
+    val conversationId = UUID.randomUUID().toString()
+
+    return openAiGPT4OMini
+        .prompt("해당 위치($location)의 현재 시간을 알려줘.")
+        .advisors { it.param(ChatMemory.CONVERSATION_ID, conversationId) }
+        .toolNames(DataTimeTools.CURRENT_DATETIME_TOOL)
+        .call()
+        .content() ?: "No response generated."
+}
+
+```
+
+`@Bean`으로 정의된 함수형 도구는 `toolNames` 메서드를 사용하여 ChatClient에 등록할 수 있습니다.
+
+### 도구 실행 방식
+
+도구 실행은 두 가지 방식으로 이루어질 수 있습니다.
+
+1. Framework-Controlled Tool Execution (프레임워크 제어)
+2. User-Controlled Tool Execution (사용자 제어)
+
+#### Framework-Controlled Tool Execution
+
+실행 흐름
+![tool-calling-workflow.png](assets/tool-calling-workflow.png)
+> 출처: https://docs.spring.io/spring-ai/reference/api/tools.html#_framework_controlled_tool_execution
+
+1. 도구 정의 포함: 채팅 요청(Prompt)에 도구 정의를 포함하고 ChatModel API를 호출
+2. 도구 호출 응답: 모델이 도구 호출을 결정하면 도구 이름과 입력 매개변수가 포함된 응답(ChatResponse) 전송
+3. ToolCallingManager 호출: ChatModel이 ToolCallingManager API로 도구 호출 요청 전송
+4. 도구 실행: ToolCallingManager가 도구를 식별하고 제공된 입력 매개변수로 실행
+5. 결과 반환: 도구 호출 결과를 ToolCallingManager에 반환
+6. 모델로 결과 전송: ChatModel이 도구 실행 결과를 AI 모델에 다시 전송(ToolResponseMessage)
+7. 최종 응답 생성: AI 모델이 도구 호출 결과를 추가 컨텍스트로 사용하여 최종 응답 생성
+
+#### User-Controlled Tool Execution
+
+도구 실행 라이프사이클을 직접 제어하고 싶은 경우 사용합니다. `internalToolExecutionEnabled` 속성을 false로 설정하여 활성화합니다.
+
+```kotlin
+val chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(toolCallback)
+    .internalToolExecutionEnabled(false) // 프레임워크 내부 도구 실행 비활성화
+    .build()
+```
+
+이렇게 하면 ChatClient가 도구 호출 응답을 받으면 도구 실행을 프레임워크에 위임하지 않고 애플리케이션에서 직접 처리할 수 있습니다.
+
+### 마무리
+
+Spring AI의 도구 호출 기능은 대규모 언어 모델이 외부 도구 및 API와 상호작용할 수 있도록 지원하여 애플리케이션의 기능을 확장하고 보다 복잡한 작업을 수행할 수 있도록 합니다. Observability 및
+Logging과 같은 추가 기능도 제공하여 도구 호출 활동을 모니터링하고 디버깅할 수도 있습니다.
+
 ## Reference Documentation
 
 - [Spring AI Reference Documentation](https://docs.spring.io/spring-ai/reference/index.html)

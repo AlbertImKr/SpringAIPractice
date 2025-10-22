@@ -1,0 +1,37 @@
+### Set an alarm for 5 minutes use `@Tool` annotation
+
+POST {{url}}/api/tool/alarm
+Content-Type: application/json
+
+{
+  "durationInMinutes": 5
+}
+
+
+### Set an alarm for 5 minutes use `MethodToolCallBack`
+
+POST {{url}}/api/tool/method-callback
+Content-Type: application/json
+
+{
+  "durationInMinutes": 5
+}
+
+
+### Ask for the location of the current time using FunctionToolCallBack
+
+GET {{url}}/api/tool/function-callback
+Content-Type: application/json
+
+{
+  "location": "Asia/Seoul"
+}
+
+### Ask for the location of the current time using DynamicTool
+
+GET {{url}}/api/tool/dynamic-tool
+Content-Type: application/json
+
+{
+  "location": "America/New_York"
+}
